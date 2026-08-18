@@ -1,0 +1,6 @@
+---
+description: Harbor Studio client scope
+alwaysApply: true
+---
+
+Apply `AGENTS.md` only within this client tree. Make `harbor-campaign-review` available only here.

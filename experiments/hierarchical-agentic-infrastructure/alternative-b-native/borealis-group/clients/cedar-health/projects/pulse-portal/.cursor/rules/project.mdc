@@ -1,0 +1,6 @@
+---
+description: Pulse Portal project scope
+alwaysApply: true
+---
+
+Apply `AGENTS.md`. Read `.agents/context/project.md` when project context is needed. Make the `pulse-release-check` skill available within this project.

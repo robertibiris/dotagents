@@ -1,0 +1,6 @@
+---
+description: Borealis Group company scope
+alwaysApply: true
+---
+
+Apply `AGENTS.md`. Read `.agents/context/company.md` when company context is needed. Make the `borealis-governance` skill available when its description matches the task.

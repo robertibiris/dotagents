@@ -1,0 +1,6 @@
+---
+description: Cedar Health client scope
+alwaysApply: true
+---
+
+Apply `AGENTS.md`. Read `.agents/context/client.md` when client context is needed. Make the `cedar-compliance-review` skill available within this directory tree.
