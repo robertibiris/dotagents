@@ -13,22 +13,25 @@ None.
 
 ## Implementation
 
-**Source of truth**: Follow the step-by-step setup guide in `.agents/context/agentic-infra-setup.md`.
+**Architecture authority**: Follow `.agents/context/agentic-infrastructure.md` and `.agents/context/progressive-disclosure.md`.
+
+**Operational source**: Follow the step-by-step guide in `.agents/context/setup-agentic-infrastructure.md` and the mappings in `.agents/context/platform-adapters.md`.
 
 ## Usage
 
-1. Open `.agents/context/agentic-infra-setup.md`.
-2. Answer the pre-setup questions and follow the setup steps for your chosen platforms (Cursor/Copilot/Claude/etc.).
-3. Ensure platform-specific files **reference** `AGENTS.md` and do not duplicate content.
+1. Open `.agents/context/agentic-infrastructure.md`, `.agents/context/progressive-disclosure.md`, `.agents/context/setup-agentic-infrastructure.md`, and `.agents/context/platform-adapters.md`.
+2. Choose the initial context scope independently of repository layout and follow the setup or migration steps.
+3. Register local context and skills explicitly in the scope map; do not rely on directory membership alone.
+4. Add only the adapters required by the chosen platforms and ensure they **reference** canonical scope material rather than duplicating it.
 
 ## Expected outcomes
 
-- `AGENTS.md` exists at the project root and acts as the single source of truth.
-- `.agents/` contains modular shared context and skills.
-- `.agents/local/` exists with its README and outer-tracked `context/`, `skills/`, and `plans/` placeholders.
-- Developer-owned local content is ignored by the outer repository and may optionally be versioned through `setup-local-repo`.
-- Tracked plans live under `.agents/local/plans/`; their templates remain with the shared skills that consume them.
-- Platform-specific skill directories are symlinked to `.agents/skills/` for single source of truth.
+- A conforming `AGENTS.md` exists at the chosen scope and acts as its canonical map.
+- Registered `.agents/context/` and `.agents/skills/` resources expose progressive-disclosure metadata.
+- Direct parent and child declarations are reciprocal when both endpoints are accessible.
+- Optional `.agents/local/` state is created only when requested and may be independently versioned through `setup-local-repo`.
+- Tracked plans, when enabled for the scope, live under its `.agents/local/plans/`; their templates remain with the shared skills that consume them.
+- Platform adapters follow `platform-adapters.md`, preserve a single source of truth, and are validated for the chosen surface.
 
 ## Side effects
 

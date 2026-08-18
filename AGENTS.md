@@ -1,3 +1,27 @@
+---
+name: dotagents-template
+description: Root scope for the reusable agentic infrastructure template, its canonical architecture, shared skills, and local workflow conventions.
+scope:
+  type: template
+  parent: null
+  children: []
+resources:
+  context:
+    - .agents/context/agentic-infrastructure.md
+    - .agents/context/progressive-disclosure.md
+    - .agents/context/setup-agentic-infrastructure.md
+    - .agents/context/platform-adapters.md
+  skills:
+    - .agents/skills/create-learning/SKILL.md
+    - .agents/skills/create-plan/SKILL.md
+    - .agents/skills/create-task/SKILL.md
+    - .agents/skills/review-agentic-infra/SKILL.md
+    - .agents/skills/setup-agentic-context/SKILL.md
+    - .agents/skills/setup-local-repo/SKILL.md
+    - .agents/skills/update-plan/SKILL.md
+    - .agents/skills/whats-next/SKILL.md
+---
+
 # 🤖 Agentic Context
 
 This is a stub template file used to setup new 
@@ -26,9 +50,12 @@ In this repository a **tracked plan** refers to a file-based plan under `.agents
 
 ## Agentic Infrastructure Description
 
-- `AGENTS.md` (this file) is the master reference. It never lists active plans; instead it documents how to use the system.
+- `AGENTS.md` (this file) is the map for the current root context scope. Its frontmatter registers direct scope relationships and local agent-addressable resources without eagerly loading their bodies. It never lists active plans.
 - `.agents/` stores all structured context:
-  - `.agents/context/agentic-infra-setup.md` provides the detailed reference for setting up and auditing the agentic infrastructure. Consult it when cloning this template or when auditing an existing repo.
+  - `.agents/context/agentic-infrastructure.md` is the normative architecture for hierarchical scopes, navigation, inheritance, path semantics, access boundaries, and adapters.
+  - `.agents/context/progressive-disclosure.md` defines registered agent-addressable Markdown, metadata-first inspection, and selective body loading.
+  - `.agents/context/setup-agentic-infrastructure.md` is the operational installation and migration guide.
+  - `.agents/context/platform-adapters.md` documents how each supported platform exposes the canonical infrastructure.
   - `.agents/skills/` holds skill definitions. Each skill is a directory containing a `SKILL.md` with YAML frontmatter (name, description) and instructions. Templates used by one skill live with that skill. Platform-specific skill directories (`.claude/skills/`, `.cursor/skills/`) are symlinked to `.agents/skills/` so all platforms read from the same source of truth.
   - `.agents/local/` is the developer-owned space for content that is useful locally but should not be committed to the main repository. It starts with `context/`, `skills/`, and `plans/`, may contain other local files, and can optionally be versioned through the `setup-local-repo` skill.
   - `.agents/local/plans/` groups every tracked plan by name. Each plan directory contains:
@@ -37,6 +64,16 @@ In this repository a **tracked plan** refers to a file-based plan under `.agents
     - `learnings.md` (optional) – plan-specific insights discovered during execution.
   - `.agents/local/plans/_learnings/` stores cross-cutting reference documents (topic-named, not tied to any single plan).
 - The optional nested repository belongs at `.agents/local/`, not inside `plans/`. This lets one local history cover plans, personal context, experimental skills, scratch work, and other developer-specific state without exposing those files to the outer repository.
+
+## Scope Navigation
+
+- Treat each `AGENTS.md` as a map of its own scope, not as an eager knowledge bundle.
+- Inspect registered resource frontmatter before deciding whether to read a complete body.
+- Resolve every registered path relative to the `AGENTS.md` that declares it.
+- Follow only declared direct-parent or direct-child routes required by the task.
+- Do not enumerate or load sibling scopes unless the task explicitly targets them.
+- Stop cleanly when a declared scope is outside granted filesystem or workspace access.
+- Apply effective instructions from the highest accessible ancestor to the active leaf; descendants must not silently weaken protected security, privacy, compliance, confidentiality, or access requirements.
 - Plans and tasks must not be merged together; every concern has its own file. Metadata, timestamps, and note ordering must stay consistent across the hierarchy.
 
 ## Skills Index

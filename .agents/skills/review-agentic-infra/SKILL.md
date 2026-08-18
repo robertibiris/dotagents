@@ -46,7 +46,7 @@ Review and audit the AI agent infrastructure. This includes context files (docum
 
 For each context file, evaluate against:
 
-1. **Structure & Organization** — follows `agentic-infra-setup.md` patterns, proper directory organization, clear naming, appropriate location.
+1. **Structure & Organization** — follows `agentic-infrastructure.md`, `progressive-disclosure.md`, and `setup-agentic-infrastructure.md`; proper directory organization, clear naming, appropriate location.
 2. **Content Quality** — complete, clear, actionable, with examples where helpful, correct references.
 3. **Consistency** — consistent structure, naming, formatting, and style across files. Correct cross-references.
 4. **Best Practices** — single source of truth (no duplication), platform files reference core context, proper separation of concerns, modular design.
@@ -101,6 +101,6 @@ Produce a structured review report:
 - Be thorough: review all agent infrastructure files systematically.
 - Be constructive: provide actionable suggestions, not just criticism.
 - Prioritize: focus on most impactful improvements first.
-- Reference authority: use `agentic-infra-setup.md` as the guiding document.
+- Reference authority: use `agentic-infrastructure.md` and `progressive-disclosure.md` for normative behavior, `setup-agentic-infrastructure.md` for operations, and `platform-adapters.md` for platform mappings.
 - Be specific: provide concrete examples and file references.
 - Balance: don't over-engineer, but ensure quality and maintainability.
