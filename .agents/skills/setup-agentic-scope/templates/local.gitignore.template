@@ -1,0 +1,9 @@
+*
+!.gitignore
+!README.md
+!context/
+!context/.gitkeep
+!skills/
+!skills/.gitkeep
+!plans/
+!plans/.gitkeep

@@ -1,0 +1,13 @@
+# {{SCOPE_TITLE}} Agent Map
+
+## Scope Instructions
+
+Describe only instructions owned by {{SCOPE_NAME}}. Keep detailed knowledge in registered context files and repeatable workflows in registered skills.
+
+## Protected Requirements
+
+List security, privacy, compliance, confidentiality, or access requirements that descendants must not silently weaken. Remove this section when none apply.
+
+## Navigation
+
+Use the scope-map frontmatter for the direct parent, direct children, and local resources. Inspect registered metadata before reading complete resource bodies.

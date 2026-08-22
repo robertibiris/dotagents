@@ -7,6 +7,10 @@ Interactively create or update learnings documents so non-obvious, hard-won insi
 
 **Important**: This skill writes to file-based tracked plans under `.agents/local/plans/` — not the agent's built-in planning feature.
 
+## Resolve the plan root
+
+Use the `setup-agentic-scope` resolver before selecting a learning file, and interpret every path below relative to `selected_local.plans_path`. If several ancestor local directories are applicable, obtain an explicit scope choice and rerun with `--local`; do not silently write a learning into the nearest repository. A single flat-repository local directory remains fully compatible.
+
 ## Interactive flow
 
 ### 1. Determine scope
@@ -29,7 +33,7 @@ Interactively create or update learnings documents so non-obvious, hard-won insi
 
 ### 4. Draft and confirm
 
-- Structure the file using `.agents/skills/create-learning/templates/learnings.md`.
+- Structure the file using `templates/learnings.md` bundled with this skill, resolved from the discovered skill location rather than the process working directory.
 - Show the full drafted content and request explicit confirmation.
 - Write files only after explicit confirmation.
 

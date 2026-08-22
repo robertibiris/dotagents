@@ -26,6 +26,7 @@ name: aster-labs
 description: Client scope for Aster Labs engagements, policies, and projects.
 scope:
   type: client
+  confidential: true
   parent: ../../AGENTS.md
   children:
     - projects/orbit-console/AGENTS.md
@@ -44,6 +45,7 @@ Root scopes use `parent: null`. Scopes with no children or local resources use e
 - `name` — stable, lowercase, ASCII identifier using hyphens.
 - `description` — substantive routing guidance explaining when the scope is relevant.
 - `scope.type` — descriptive scope category such as `company`, `client`, `project`, `service`, or `package`.
+- `scope.confidential` — optional boolean classification signal. When `true`, audits warn if multiple confidential siblings share a readable repository; it is not an access-control mechanism.
 - `scope.parent` — relative path to the direct parent's `AGENTS.md`, or `null`.
 - `scope.children` — ordered relative paths to direct-child `AGENTS.md` files.
 - `resources.context` — ordered relative paths to locally registered context Markdown.

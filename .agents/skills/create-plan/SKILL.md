@@ -7,6 +7,10 @@ Create a new tracked plan directory and initialize `plan.md` with its initial ta
 
 **Important**: This skill creates file-based tracked plans under `.agents/local/plans/` — not the agent's built-in planning feature.
 
+## Resolve the plan root
+
+Before reading or writing plans, run the `resolve` command bundled with `setup-agentic-scope`, using the operation's working path as `--start`. Use `selected_local.plans_path` as the plan root. If resolution reports multiple applicable ancestor locals, stop and identify the intended scope with the user, then rerun with `--local`; never choose by Git root or proximity alone. If no local directory exists, create one only when the user wants tracked local state.
+
 ## Inputs
 
 - `plan_name` (required) — slug/cased name that becomes the folder under `.agents/local/plans/`.
@@ -18,8 +22,8 @@ Create a new tracked plan directory and initialize `plan.md` with its initial ta
 
 ### Phase 1: Create the plan
 
-1. Confirm the target directory `.agents/local/plans/{PLAN_NAME}` does not already exist; abort with guidance if it does.
-2. Create the directory and write `plan.md` using the skill-owned template at `.agents/skills/create-plan/templates/plan.md`:
+1. Confirm the target directory `{SELECTED_PLANS_ROOT}/{PLAN_NAME}` does not already exist; abort with guidance if it does.
+2. Create the directory and write `plan.md` using `templates/plan.md` bundled with this skill. Resolve the template from this skill's discovered location, not from the process working directory:
    - Set `status: active`.
    - Populate `priority`, `created`, and `updated` using the canonical timestamp format: `YYYY-MM-DD HH:MM TZ`.
    - Insert the provided `objective` text.
@@ -29,14 +33,14 @@ Create a new tracked plan directory and initialize `plan.md` with its initial ta
 ### Phase 2: Create initial tasks
 
 4. Identify the tasks needed to achieve the objective. If the user provided them, use those. If not, propose a task breakdown and confirm with the user before proceeding.
-5. For each task, **follow the instructions in `.agents/skills/create-task/SKILL.md`** to create the task file. This ensures consistent naming (numeric prefixes), template usage, and parent plan updates.
+5. For each task, **follow the discovered `create-task` skill** to create the task file. This ensures consistent naming (numeric prefixes), template usage, and parent plan updates without assuming that skill lives at the active scope.
 6. Update the plan's progress notes to reflect task creation.
 
 **A plan without tasks is incomplete.** Always ensure at least one task is created before finishing.
 
 ## Side effects
 
-- Creates directories/files under `.agents/local/plans/{PLAN_NAME}/`.
+- Creates directories/files under `{SELECTED_PLANS_ROOT}/{PLAN_NAME}/`.
 - Creates one or more task files within the plan directory.
 - Emits guidance about next steps (e.g., "Run `whats-next` to see actionable items").
 

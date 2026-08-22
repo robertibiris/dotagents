@@ -10,8 +10,8 @@ Review and audit the AI agent infrastructure. This includes context files (docum
 ## Review scope
 
 ### Context files to review:
-- `AGENTS.md` (root level and in subdirectories if any)
-- `.agents/` directory:
+- The explicitly selected active `AGENTS.md` and scope maps reachable through its declared parent/direct-child registry
+- Each participating scope's `.agents/` directory:
   - `context/*.md` — all context files
   - `skills/*/SKILL.md` — all skill definitions
   - `local/README.md` — purpose, privacy boundary, ownership, and optional nested version control
@@ -33,14 +33,22 @@ Review and audit the AI agent infrastructure. This includes context files (docum
 
 **Out of scope**: Project code files, project documentation (unless agent context), regular project files, and the developer-owned contents of `.agents/local/` beyond its shared README, placeholders, ignore boundary, and repository structure.
 
+## Resolve review boundaries
+
+Run the `resolve` command bundled with `setup-agentic-scope` from the operation's working path, or use a scope explicitly named by the user. Do not substitute the nearest Git root for the context scope. If several local directories are applicable, audit shared infrastructure first and ask which local owner is intended before inspecting plan state.
+
+Repository and filesystem permissions are the confidentiality boundary. Scope validation can prove routing consistency and detect suspicious references; it cannot prove that readable sibling content is inaccessible.
+
 ## Review process
 
 ### Step 1: Inventory agent infrastructure
 
-1. **Identify all context files**: Scan for `AGENTS.md` files, list all `.md` files in `.agents/context/`, inspect `.agents/local/README.md`, and check platform-specific files.
-2. **Identify all skills and assets**: List all `SKILL.md` files and their directly owned templates/scripts under `.agents/skills/`.
-3. **Identify all scripts**: Find all executable or script files in shared `.agents/` infrastructure while excluding developer-local contents.
-4. **Inventory path references**: Search active infrastructure for local, plan-root, template, and setup-skill references; classify historical plan records separately from operative guidance.
+1. **Identify scope maps deterministically**: Read the active map's frontmatter, then traverse only declared parents and registered direct children. Queue each registered child map; do not recursively search the filesystem for `AGENTS.md` files. Use explicit candidate containers only when the user asks to find unregistered scopes.
+2. **Inspect metadata first**: Extract headers from registered context and skills without bodies. Select bodies for review only after their descriptions establish relevance to infrastructure quality.
+3. **Identify skills and assets**: From each selected scope, inspect registered `SKILL.md` files and their directly owned templates/scripts. Directory membership alone does not register a resource.
+4. **Identify scripts**: Inspect scripts owned by selected registered skills while excluding developer-local contents.
+5. **Inventory platform adapters and path references**: Check generated adapters, declaring-scope provenance, local/plan roots, templates, and setup-skill references; classify historical plan records separately from operative guidance.
+6. **Validate the registered tree**: Run `scope_tool.rb validate --scope path/to/AGENTS.md --descendants`, then run `adapters --check` at each participating scope whose platforms are supported.
 
 ### Step 2: Review context files
 
@@ -52,6 +60,7 @@ For each context file, evaluate against:
 4. **Best Practices** — single source of truth (no duplication), platform files reference core context, proper separation of concerns, modular design.
 5. **Maintainability** — easy to update, clear relationships, portable where applicable, logical structure.
 6. **Ownership boundary** — shared guidance and assets remain outer-tracked; developer-owned state remains local and ignored.
+7. **Hierarchy integrity** — reciprocal routes, cycles, duplicate effective skill names, cross-sibling references, partial-access boundaries, and adapter integrity are reported distinctly.
 
 ### Step 3: Review skills
 
@@ -64,6 +73,13 @@ For each skill, evaluate:
 ### Step 4: Review scripts (if any)
 
 For each script, evaluate: efficacy, clarity, modularity, maintainability, scalability, code quality, idempotency, preflight safety, and recovery behavior for filesystem or Git migrations.
+
+### Step 5: Review isolation signals
+
+- Treat a cross-sibling registered resource reference as a structural error.
+- When multiple direct children explicitly marked confidential share one readable Git repository, report a warning for deliberate review, not a proven security defect.
+- Treat missing ancestors as access-boundary warnings when the accessible subtree is otherwise valid.
+- Report ambiguous `.agents/local/` ownership and do not inspect or mutate developer plan contents until resolved.
 
 ## Output format
 
@@ -89,6 +105,7 @@ Produce a structured review report:
 - Completeness assessment
 - Skill-specific recommendations
 - Template ownership and setup/migration safety findings
+- Active-scope resolution, registered-tree validation, and platform-adapter findings
 
 ### Section 4: Action items
 - **Priority 1 (Critical)**: Must-fix issues

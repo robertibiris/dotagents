@@ -7,6 +7,10 @@ Update a tracked plan — statuses, new tasks, task revisions, or plan completio
 
 **Important**: This skill updates file-based tracked plans under `.agents/local/plans/` — not the agent's built-in planning feature.
 
+## Resolve the plan root
+
+Before resolving `target`, run the `setup-agentic-scope` resolver from the operation's working path. Use `selected_local.plans_path` as the only implicit plan root. If multiple ancestor locals remain applicable, infer an explicit scope only from clear session context; otherwise stop and ask. Never choose a plan merely because another repository or local directory has a matching name.
+
 ## Inputs
 
 - `target` (required) — path or identifier of the plan (`plan`) or task (`plan/task`). **ALWAYS try to infer it first** from the current session context. If truly unclear, ask the user.
@@ -24,7 +28,7 @@ Update the `status` field of a task or plan (`pending`, `active`, `paused`, `com
 
 ### 2. New tasks
 
-Create new task files for work discovered mid-plan. Use the task template at `.agents/skills/create-task/templates/task.md`. Follow the numeric prefix naming convention from the `create-task` skill — use dot notation (e.g., `02.1-`) to insert between existing tasks without renumbering. Update the parent plan's "Tasks" section and progress notes.
+Create new task files for work discovered mid-plan. Use `templates/task.md` bundled with the discovered `create-task` skill, without resolving it from the process working directory. Follow that skill's numeric prefix naming convention — use dot notation (e.g., `02.1-`) to insert between existing tasks without renumbering. Update the parent plan's "Tasks" section and progress notes.
 
 ### 3. Task revisions
 
@@ -38,8 +42,8 @@ When all tasks are done, verify all tasks show `completed` status. If any don't,
 
 1. **Assess what changed.** Parse the user's message to determine which mutation types apply.
 2. **Resolve target files:**
-   - Plans: `.agents/local/plans/{PLAN_NAME}/plan.md`
-   - Tasks: `.agents/local/plans/{PLAN_NAME}/{TASK_NAME}.md`
+   - Plans: `{SELECTED_PLANS_ROOT}/{PLAN_NAME}/plan.md`
+   - Tasks: `{SELECTED_PLANS_ROOT}/{PLAN_NAME}/{TASK_NAME}.md`
 3. **Apply mutations:**
    - For status changes: update `status` and `updated` timestamp.
    - For new tasks: create task files, update parent plan's Tasks section.

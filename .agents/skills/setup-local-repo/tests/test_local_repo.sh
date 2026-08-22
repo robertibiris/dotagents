@@ -93,6 +93,17 @@ test_resume_incomplete_setup() {
     pass "incomplete setup recovery"
 }
 
+test_explicit_scope_from_outside() {
+    local fixture="${TEST_ROOT}/explicit-scope/company/client"
+    mkdir -p "${fixture}"
+    prepare_outer_repo "${fixture}"
+    prepare_shared_files "${fixture}"
+
+    (cd "${TEST_ROOT}" && bash "${fixture}/.agents/skills/setup-local-repo/scripts/setup_local_repo.sh" --scope-dir "${fixture}" >/dev/null)
+    [[ -d "${fixture}/.agents/local/.git" ]] || fail "explicit scope setup targeted the process working directory"
+    pass "explicit context-scope setup from another working directory"
+}
+
 test_history_migration_with_dirty_content() {
     local fixture="${TEST_ROOT}/migration"
     mkdir -p "${fixture}"
@@ -167,6 +178,7 @@ test_missing_identity_failure() {
 
 test_fresh_and_repeated_setup
 test_resume_incomplete_setup
+test_explicit_scope_from_outside
 test_history_migration_with_dirty_content
 test_collision_refusal
 test_existing_local_repo_refusal

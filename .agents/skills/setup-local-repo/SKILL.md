@@ -17,13 +17,19 @@ The scripts in `scripts/` are the deterministic sources of truth:
 - `migrate_legacy_plans_repo.sh` — re-root an existing `.agents/plans/.git/` repository at `.agents/local/.git/` while preserving history.
 
 Both scripts use `templates/local-repo.gitignore.template` as the authoritative nested `.gitignore` content.
+Set `SETUP_LOCAL_REPO_SKILL_DIR` to the absolute directory containing this discovered `SKILL.md`. Resolve both scripts and their template beneath it; when the skill is inherited from an ancestor, do not resolve them from the active leaf.
+
+## Resolve the owning scope
+
+Use the `setup-agentic-scope` resolver from the operation's working path before initialization or migration. The target is the context scope that owns the selected `.agents/local/`, not necessarily a Git root. If several ancestor local directories are applicable and the active scope has none, require an explicit scope choice. Pass that scope directory to the scripts with `--scope-dir`.
 
 ## Fresh Setup
 
-Run from the project root:
+Run with the intended context scope explicitly:
 
 ```bash
-bash .agents/skills/setup-local-repo/scripts/setup_local_repo.sh
+bash "${SETUP_LOCAL_REPO_SKILL_DIR}/scripts/setup_local_repo.sh" \
+  --scope-dir path/to/scope
 ```
 
 The script validates the scaffold and Git identity, writes the generated `.gitignore`, initializes `.agents/local/.git/`, and creates the initial local-repository commit. Re-running it after successful initialization is a no-op.
@@ -33,7 +39,8 @@ The script validates the scaffold and Git identity, writes the generated `.gitig
 For an existing nested repository at `.agents/plans/.git/`, run:
 
 ```bash
-bash .agents/skills/setup-local-repo/scripts/migrate_legacy_plans_repo.sh
+bash "${SETUP_LOCAL_REPO_SKILL_DIR}/scripts/migrate_legacy_plans_repo.sh" \
+  --scope-dir path/to/scope
 ```
 
 The migration script:

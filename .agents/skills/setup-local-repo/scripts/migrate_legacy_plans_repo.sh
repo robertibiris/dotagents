@@ -3,10 +3,19 @@
 
 set -euo pipefail
 
-LEGACY_DIR=".agents/plans"
-LOCAL_DIR=".agents/local"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCOPE_DIR="$(pwd)"
+if [[ "${1:-}" == "--scope-dir" ]]; then
+    [[ -n "${2:-}" ]] || { printf '[ERROR] --scope-dir requires a path\n' >&2; exit 1; }
+    SCOPE_DIR="$(cd "${2}" && pwd)"
+    shift 2
+fi
+[[ "$#" -eq 0 ]] || { printf '[ERROR] Unknown arguments: %s\n' "$*" >&2; exit 1; }
+
+LEGACY_DIR="${SCOPE_DIR}/.agents/plans"
+LOCAL_DIR="${SCOPE_DIR}/.agents/local"
 LOCAL_PLANS_DIR="${LOCAL_DIR}/plans"
-TEMPLATE_PATH=".agents/skills/setup-local-repo/templates/local-repo.gitignore.template"
+TEMPLATE_PATH="${SCRIPT_DIR}/../templates/local-repo.gitignore.template"
 
 log_info() { printf '[INFO] %s\n' "$*"; }
 log_error() { printf '[ERROR] %s\n' "$*" >&2; }

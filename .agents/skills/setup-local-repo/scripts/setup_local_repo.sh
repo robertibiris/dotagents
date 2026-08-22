@@ -3,9 +3,18 @@
 
 set -euo pipefail
 
-LOCAL_DIR=".agents/local"
-LEGACY_GIT_DIR=".agents/plans/.git"
-TEMPLATE_PATH=".agents/skills/setup-local-repo/templates/local-repo.gitignore.template"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCOPE_DIR="$(pwd)"
+TEMPLATE_PATH="${SCRIPT_DIR}/../templates/local-repo.gitignore.template"
+if [[ "${1:-}" == "--scope-dir" ]]; then
+    [[ -n "${2:-}" ]] || { printf '[ERROR] --scope-dir requires a path\n' >&2; exit 1; }
+    SCOPE_DIR="$(cd "${2}" && pwd)"
+    shift 2
+fi
+[[ "$#" -eq 0 ]] || { printf '[ERROR] Unknown arguments: %s\n' "$*" >&2; exit 1; }
+
+LOCAL_DIR="${SCOPE_DIR}/.agents/local"
+LEGACY_GIT_DIR="${SCOPE_DIR}/.agents/plans/.git"
 GITIGNORE_PATH="${LOCAL_DIR}/.gitignore"
 GIT_DIR="${LOCAL_DIR}/.git"
 
@@ -36,8 +45,8 @@ main() {
     fi
 
     local outer_name outer_email global_name global_email
-    outer_name="$(git config user.name 2>/dev/null || true)"
-    outer_email="$(git config user.email 2>/dev/null || true)"
+    outer_name="$(git -C "${SCOPE_DIR}" config user.name 2>/dev/null || true)"
+    outer_email="$(git -C "${SCOPE_DIR}" config user.email 2>/dev/null || true)"
     global_name="$(git config --global user.name 2>/dev/null || true)"
     global_email="$(git config --global user.email 2>/dev/null || true)"
     if [[ -z "${outer_name}" || -z "${outer_email}" ]]; then

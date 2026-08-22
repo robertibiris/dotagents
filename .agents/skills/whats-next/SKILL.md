@@ -5,9 +5,13 @@ description: "Surface the next actionable steps across every active tracked plan
 
 Surface the next actionable steps across every active plan so work can resume without ambiguity.
 
+## Resolve the plan root
+
+Run the `setup-agentic-scope` resolver from the active working path before enumeration. Scan only `selected_local.plans_path`. When the active scope has no local directory and several ancestors do, report the ambiguity and ask which scope's plans to resume; do not combine plan inventories across local repositories. A user may explicitly request several resolved plan roots, in which case report each root separately.
+
 ## Behavior
 
-1. Enumerate plan directories by direct filesystem listing of `.agents/local/plans/` (not ignore-aware search), then inspect each `{PLAN_NAME}/plan.md`.
+1. Enumerate plan directories by direct filesystem listing of `{SELECTED_PLANS_ROOT}` (not ignore-aware search), then inspect each `{PLAN_NAME}/plan.md`.
    - Exclude non-plan entries such as `_learnings`, `.gitkeep`, and hidden/system files.
    - Skip plans marked `completed`.
    - Be wise: you do not need to read all content in each `plan.md` if you only need the status line at first.

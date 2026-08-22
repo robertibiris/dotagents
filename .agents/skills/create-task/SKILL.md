@@ -5,6 +5,10 @@ description: "Add a task file under an existing tracked plan (persisted plan, ne
 
 Add a task file under an existing tracked plan and insert a reference in the parent plan's Tasks list.
 
+## Resolve the plan root
+
+Before reading or writing tasks, use the `setup-agentic-scope` resolver from the operation's working path. Use `selected_local.plans_path`; do not assume the repository root owns the plan. If multiple ancestor local directories are applicable and the active scope has none, stop and request the intended scope rather than guessing. Preserve the flat-repository path `.agents/local/plans/` when it is the single resolved root.
+
 ## Inputs
 
 - `plan_name` (required) — target plan directory under `.agents/local/plans/`.
@@ -63,12 +67,12 @@ Deeper nesting is allowed for subsequent insertions within insertions:
 
 ## Behavior
 
-1. Validate that `.agents/local/plans/{PLAN_NAME}` exists and that the target filename does not already exist; abort if either check fails.
+1. Validate that `{SELECTED_PLANS_ROOT}/{PLAN_NAME}` exists and that the target filename does not already exist; abort if either check fails.
 2. Determine the numeric prefix:
    - If this is the first task: use `01`.
    - If appending after existing tasks: use the next sequential number.
    - If inserting between existing tasks: use dot notation based on the surrounding task numbers.
-3. Generate the task file using the skill-owned template at `.agents/skills/create-task/templates/task.md`:
+3. Generate the task file using `templates/task.md` bundled with this skill. Resolve it from this skill's discovered location rather than the process working directory:
    - Set `belongs_to_plan` to the parent plan name.
    - Initialize `status: active` (or `pending` if it depends on earlier tasks).
    - Populate `created` and `updated` using the canonical timestamp format: `YYYY-MM-DD HH:MM TZ`.

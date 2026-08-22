@@ -17,6 +17,7 @@ resources:
     - .agents/skills/create-task/SKILL.md
     - .agents/skills/review-agentic-infra/SKILL.md
     - .agents/skills/setup-agentic-context/SKILL.md
+    - .agents/skills/setup-agentic-scope/SKILL.md
     - .agents/skills/setup-local-repo/SKILL.md
     - .agents/skills/update-plan/SKILL.md
     - .agents/skills/whats-next/SKILL.md
@@ -56,7 +57,7 @@ In this repository a **tracked plan** refers to a file-based plan under `.agents
   - `.agents/context/progressive-disclosure.md` defines registered agent-addressable Markdown, metadata-first inspection, and selective body loading.
   - `.agents/context/setup-agentic-infrastructure.md` is the operational installation and migration guide.
   - `.agents/context/platform-adapters.md` documents how each supported platform exposes the canonical infrastructure.
-  - `.agents/skills/` holds skill definitions. Each skill is a directory containing a `SKILL.md` with YAML frontmatter (name, description) and instructions. Templates used by one skill live with that skill. Platform-specific skill directories (`.claude/skills/`, `.cursor/skills/`) are symlinked to `.agents/skills/` so all platforms read from the same source of truth.
+  - `.agents/skills/` holds skill definitions. Each skill is a directory containing a `SKILL.md` with YAML frontmatter (name, description) and instructions. Templates used by one skill live with that skill. Codex, Cursor, and supported GitHub Copilot surfaces consume this canonical directory natively; Claude adapters expose it through a scope-local `.claude/skills` symlink.
   - `.agents/local/` is the developer-owned space for content that is useful locally but should not be committed to the main repository. It starts with `context/`, `skills/`, and `plans/`, may contain other local files, and can optionally be versioned through the `setup-local-repo` skill.
   - `.agents/local/plans/` groups every tracked plan by name. Each plan directory contains:
     - `plan.md` – metadata, objectives, requirements, steps, tasks summary, and progress log.
@@ -89,19 +90,22 @@ In this repository a **tracked plan** refers to a file-based plan under `.agents
 ### Infra skills (infrastructure setup and maintenance)
 
 - **`.agents/skills/setup-agentic-context/`** — Bootstrap agentic infrastructure in a new repo
+- **`.agents/skills/setup-agentic-scope/`** — Create, register, inspect, repair, and validate hierarchical context scopes
 - **`.agents/skills/setup-local-repo/`** — Initialize a nested git repository in `.agents/local/` for developer-owned content
 - **`.agents/skills/review-agentic-infra/`** — Review and audit agent infrastructure
 
 ## Guidance for Resuming Work
 
-1. Run the `whats-next` skill to list every active tracked plan and its next actionable task.
-2. Open the indicated `plan.md` or task file under `.agents/local/plans/`.
-3. Review the latest progress notes (remember they are reverse chronological).
-4. Continue execution, update steps or requirements if needed, and append a new progress entry with timestamps before pausing or completing the work.
+1. Resolve the active scope and applicable local directory with `setup-agentic-scope`; never choose between multiple ancestor locals silently.
+2. Run the `whats-next` skill to list every active tracked plan in the resolved local directory and its next actionable task.
+3. Open the indicated `plan.md` or task file under the resolved `plans/` directory.
+4. Review the latest progress notes (remember they are reverse chronological).
+5. Continue execution, update steps or requirements if needed, and append a new progress entry with timestamps before pausing or completing the work.
 
 ## Assistant Behavior Requirements
 
 - Enforce the directory, file, and naming structure exactly as documented.
+- Resolve the active scope and local owner before implicit plan operations; surface ambiguity instead of selecting by repository root.
 - Keep each plan and task in its own file; never co-mingle scopes or duplicate metadata.
 - Whenever interacting with a plan or task, summarize the current state and propose the next logical step before making changes.
 - Suggest creating a task whenever a plan's step grows complex or ambiguous.

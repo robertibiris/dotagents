@@ -1,0 +1,5 @@
+# Local Developer Directory
+
+This optional directory contains developer-owned state for the `{{SCOPE_NAME}}` context scope. It may hold personal context, experimental skills, tracked plans, scratch work, and other local workflow material.
+
+Content here is private by convention, not a secrets vault. Store credentials and production secrets in an appropriate secret manager.

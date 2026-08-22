@@ -22,8 +22,8 @@ Platform adapters expose the canonical scope maps, context, and skills defined i
 | --- | --- | --- | --- |
 | Codex | Native hierarchical `AGENTS.md` | Native `.agents/skills/` from the working directory through repository root | Use canonical files directly; explicit scope maps cover inaccessible or non-native paths. |
 | Claude Code | Hierarchical `CLAUDE.md` and imported `AGENTS.md` | Scope-local `.claude/skills` discovery | Generate a thin `CLAUDE.md` reference and a local skill-directory link at participating scopes. |
-| Cursor | Nested `.cursor/rules/` | Do not assume portable nested skill discovery | Generate scoped rules that point to the local `AGENTS.md` and canonical registries. |
-| GitHub Copilot | `AGENTS.md`, repository instructions, and path-specific instructions depending on surface | `.agents/skills/` on supported surfaces | Generate repository and path adapters from visible scope maps; record the tested Copilot surface. |
+| Cursor | Root `AGENTS.md`; nested rules provide reliable scope routing | Native nested `.agents/skills/`, scoped to their containing directory | Generate only a nested rule pointing to the local `AGENTS.md`; use canonical skills directly. |
+| GitHub Copilot | `AGENTS.md`, repository instructions, and path-specific instructions depending on surface | `.agents/skills/` with inherited parent directories in Copilot CLI | Generate repository or path-specific instruction pointers for cross-surface consistency; keep canonical skills in place. |
 
 ## Codex
 
@@ -68,11 +68,11 @@ alwaysApply: true
 Use the applicable `AGENTS.md` as the canonical scope map. Resolve its registered paths from the directory containing that file and follow progressive-disclosure rules.
 ```
 
-Do not copy context bodies or complete skill instructions into Cursor rules. Do not assume `.cursor/skills` behaves consistently across products or versions without current test evidence.
+Do not copy context bodies or complete skill instructions into Cursor rules. Current Cursor documentation states that `.agents/skills/` is discovered at the project root and in nested project subdirectories, with nested skills scoped to files below their directory. The generated rule exists because Cursor's documented `AGENTS.md` behavior is less uniformly hierarchical than its skills behavior.
 
 ## GitHub Copilot
 
-Copilot capabilities vary by CLI, IDE, cloud agent, and code-review surface.
+Copilot capabilities vary by CLI, IDE, cloud agent, and code-review surface. Copilot CLI discovers nested `AGENTS.md` files and inherited parent skill directories, while repository and path-specific GitHub instructions provide the broader cross-surface adapter contract.
 
 At a repository root, `.github/copilot-instructions.md` should point to the root scope map. When the surface supports path-specific instructions, generate `.github/instructions/{scope-name}.instructions.md` with an `applyTo` glob and a reference to the applicable scope map.
 
@@ -90,6 +90,17 @@ For example, several scopes inside one repository may require:
 - A repository-root Copilot instructions directory containing several path-specific adapters.
 
 If a nested scope is also distributed as a standalone repository, adapter generation at that repository root must remain valid when ancestors are absent.
+
+## Generate, Repair, or Check
+
+Use the scope-management skill's adapter command at every participating scope:
+
+```bash
+ruby .agents/skills/setup-agentic-scope/scripts/scope_tool.rb adapters \
+  --scope path/to/AGENTS.md
+```
+
+The command is idempotent. It reports native Codex behavior, writes only marked generated files, repairs stale generated files and Claude skill symlinks, and refuses to overwrite unmanaged platform files. Use `--dry-run` to preview changes or `--check` for a read-only validation suitable for CI. Restrict generation with `--platforms codex,claude,cursor,copilot` when only selected platforms are supported.
 
 ## Validation
 
@@ -111,5 +122,7 @@ For every supported platform and surface, verify:
 - [Claude Code skills](https://code.claude.com/docs/en/slash-commands)
 - [Claude Code memory](https://code.claude.com/docs/en/memory)
 - [Cursor rules](https://docs.cursor.com/context/rules-for-ai)
+- [Cursor agent skills](https://cursor.com/docs/skills)
 - [GitHub Copilot CLI custom instructions](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions)
+- [GitHub Copilot CLI skill locations](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference#skill-locations)
 - [GitHub Copilot instruction support](https://docs.github.com/en/copilot/reference/custom-instructions-support)

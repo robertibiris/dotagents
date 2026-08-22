@@ -38,7 +38,7 @@ Imagine: You clone a repo. You open Cursor. The AI already knows your folder str
 
 - **Shared context** — `AGENTS.md` as the single source of truth; `.agents/` for modular, detailed guidance
 - **Plans & tasks** — Structured way to track initiatives and executable units with status and progress notes
-- **Platform support** — Works with Cursor, GitHub Copilot, Claude; each platform references the same context
+- **Platform support** — Works with Codex, Claude Code, Cursor, and GitHub Copilot; each platform uses the same canonical context
 - **Local developer space** — Keep plans, personal context, experimental skills, and workflow state outside the main project history
 - **Optional nested repo** — Version-control the entire local developer space independently
 
@@ -52,7 +52,10 @@ project-root/
 ├── CLAUDE.md                    # Claude integration (references AGENTS.md)
 ├── .agents/
 │   ├── context/                 # Setup and reference docs
-│   │   └── agentic-infra-setup.md   # Detailed setup guide
+│   │   ├── agentic-infrastructure.md      # Normative hierarchy
+│   │   ├── progressive-disclosure.md      # Metadata-first discovery
+│   │   ├── setup-agentic-infrastructure.md # Operational setup guide
+│   │   └── platform-adapters.md            # Platform mappings
 │   ├── skills/                  # Skill definitions and skill-owned templates
 │   │   ├── create-plan/
 │   │   │   ├── SKILL.md
@@ -73,9 +76,9 @@ project-root/
 ├── .claude/
 │   └── skills/                  # Symlink → ../.agents/skills
 ├── .cursor/
-│   └── skills/                  # Symlink → ../.agents/skills
+│   └── rules/agentic-scope.mdc # Generated pointer to AGENTS.md
 └── .github/
-    └── copilot-instructions.md  # GitHub Copilot (optional, references AGENTS.md)
+    └── copilot-instructions.md # Generated pointer to AGENTS.md
 ```
 
 ---
@@ -94,21 +97,27 @@ cd my-project
 ### 2. Customize
 
 - **Edit `AGENTS.md`** — Replace the stub content with your project's overview, structure, conventions, and workflow. This is the main file agents read.
-- **Add platform files** — For Cursor or Claude, create symlinks from `.cursor/skills/` and `.claude/skills/` to `.agents/skills/`. For Copilot, add `.github/copilot-instructions.md` referencing `AGENTS.md`.
+- **Generate platform adapters** — Run the `setup-agentic-scope` adapter command. It creates only the thin files each selected platform needs while leaving canonical knowledge in `AGENTS.md` and `.agents/`.
+
+```bash
+ruby .agents/skills/setup-agentic-scope/scripts/scope_tool.rb adapters \
+  --scope AGENTS.md
+```
 
 ### 3. Optional: Set Up Local Version Control
 
 If you want to track your local plans, context, experimental skills, and workflow state with Git without committing them to the main repository, run:
 
 ```bash
-bash .agents/skills/setup-local-repo/scripts/setup_local_repo.sh
+bash .agents/skills/setup-local-repo/scripts/setup_local_repo.sh \
+  --scope-dir .
 ```
 
 This creates a nested Git repository in `.agents/local/`. The directory also works without nested version control.
 
 ### 4. Full Setup Guide
 
-For detailed setup, platform-specific options, and best practices, see [`.agents/context/agentic-infra-setup.md`](.agents/context/agentic-infra-setup.md).
+For detailed setup, platform-specific options, and best practices, see [`.agents/context/setup-agentic-infrastructure.md`](.agents/context/setup-agentic-infrastructure.md).
 
 ---
 
@@ -116,7 +125,7 @@ For detailed setup, platform-specific options, and best practices, see [`.agents
 
 ### Resuming Work
 
-Run the `whats-next` skill to see the next actionable steps across all active tracked plans. It scans your plans, finds active tasks, and tells you what to do next.
+Run the `whats-next` skill to see the next actionable steps in the active scope's resolved local directory. If several ancestor local directories are applicable, the workflow asks you to choose rather than combining or guessing.
 
 ### Creating Work
 
@@ -140,9 +149,10 @@ Run the `whats-next` skill to see the next actionable steps across all active tr
 | `create-learning` | Capture non-obvious insights as structured learnings |
 | `setup-local-repo` | Initialize or migrate the nested repository for developer-owned local content |
 | `setup-agentic-context` | Bootstrap agentic infrastructure in a new repo |
+| `setup-agentic-scope` | Create, inspect, validate, and adapt hierarchical context scopes |
 | `review-agentic-infra` | Audit agent infrastructure |
 
-Skill definitions live in [`.agents/skills/`](.agents/skills/). Platform-specific skill directories (`.claude/skills/`, `.cursor/skills/`) are symlinked to `.agents/skills/` for a single source of truth.
+Skill definitions live in [`.agents/skills/`](.agents/skills/) as the single source of truth. Codex, Cursor, and supported GitHub Copilot surfaces read that directory natively. Claude uses a generated scope-local `.claude/skills/` symlink.
 
 ---
 
@@ -150,9 +160,10 @@ Skill definitions live in [`.agents/skills/`](.agents/skills/). Platform-specifi
 
 | Platform | File(s) | Notes |
 |----------|---------|-------|
-| **Cursor** | `.cursor/skills/` (symlink) | Skills symlinked from `.agents/skills/`; optional `.cursor/rules/` for IDE-specific rules |
-| **GitHub Copilot** | `.github/copilot-instructions.md` | Reference `AGENTS.md`; add Copilot-specific instructions only |
-| **Claude** | `CLAUDE.md`, `.claude/skills/` (symlink) | `CLAUDE.md` references `AGENTS.md`; skills symlinked from `.agents/skills/` |
+| **Codex** | `AGENTS.md`, `.agents/skills/` | Native hierarchical instruction and skill discovery; no generated adapter |
+| **Cursor** | `.cursor/rules/agentic-scope.mdc`, `.agents/skills/` | Generated scoped rule points to `AGENTS.md`; nested canonical skills are discovered natively |
+| **GitHub Copilot** | `.github/copilot-instructions.md`, `.github/instructions/` | Generated repository or path-specific instructions point to the applicable scope map |
+| **Claude** | `CLAUDE.md`, `.claude/skills/` (symlink) | Generated `CLAUDE.md` imports `AGENTS.md`; the symlink exposes canonical skills |
 
 ---
 
@@ -169,7 +180,9 @@ Skill definitions live in [`.agents/skills/`](.agents/skills/). Platform-specifi
 
 ## Further Reading
 
-- [`.agents/context/agentic-infra-setup.md`](.agents/context/agentic-infra-setup.md) — Full setup guide and best practices
+- [`.agents/context/setup-agentic-infrastructure.md`](.agents/context/setup-agentic-infrastructure.md) — Operational setup and migration guide
+- [`.agents/context/agentic-infrastructure.md`](.agents/context/agentic-infrastructure.md) — Normative hierarchical architecture
+- [`.agents/context/platform-adapters.md`](.agents/context/platform-adapters.md) — Platform capability mappings and adapter contract
 - [AGENTS.md](AGENTS.md) — Master reference for plans, tasks, skills, and workflow
 - [AGENTS.md pattern](https://agents.md/) — Official documentation for the AGENTS.md pattern
 - [Cursor Project Rules](https://cursor.com/docs/context/rules) — Cursor project rules documentation
