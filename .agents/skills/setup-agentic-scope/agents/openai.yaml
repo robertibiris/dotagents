@@ -1,4 +1,4 @@
 interface:
   display_name: "Setup Agentic Scope"
-  short_description: "Create and maintain hierarchical agent scopes"
-  default_prompt: "Use $setup-agentic-scope to create or repair a hierarchical agentic context scope."
+  short_description: "Create and compose independent agent scopes"
+  default_prompt: "Use $setup-agentic-scope to create an independent scope or compose one-way child routes with routing hints."

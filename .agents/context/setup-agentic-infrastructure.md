@@ -1,25 +1,23 @@
 ---
 name: setup-agentic-infrastructure
-description: Operational guide for installing, migrating, and verifying shared agentic infrastructure and optional developer-local state.
+description: Operational guide for installing, composing, migrating, and verifying shared agentic infrastructure and optional developer-local state.
 ---
 
 # Setup Agentic Infrastructure
 
-This guide installs the agentic infrastructure defined by `agentic-infrastructure.md` and `progressive-disclosure.md`. Platform integrations are described separately in `platform-adapters.md`.
+This guide installs the architecture defined by `agentic-infrastructure.md` and `progressive-disclosure.md`. Platform integrations are described in `platform-adapters.md`.
 
-## Choose the Initial Scope
+## Choose an Independent Scope
 
-Before creating files, identify the first context scope:
+Before creating files, decide:
 
-- What does the scope represent?
-- Where is its directory?
-- Does it have an accessible direct parent?
-- Which direct children already exist?
-- Which context and skills should be registered locally?
-- Does this scope need optional `.agents/local/` state?
-- Which agent platforms must operate here?
+- What does this scope represent, and where does it live?
+- Which context and skills does it own?
+- Does it need optional `.agents/local/` state?
+- Will a broader entry scope register it as a direct child?
+- Which platforms must operate when this scope is opened independently?
 
-Do not infer that a Git repository root is necessarily the context root. A new flat project commonly starts with one root scope, but later scopes may exist inside the same repository or across nested repositories.
+Context scopes and Git repositories are independent design choices. One repository may hold many scopes; one standalone repository may be registered by several broader entries.
 
 ## Minimum Shared Structure
 
@@ -27,39 +25,46 @@ Do not infer that a Git repository root is necessarily the context root. A new f
 scope/
 ├── AGENTS.md
 └── .agents/
-    ├── context/
-    └── skills/
+    ├── context/   # only when used
+    └── skills/    # only when used
 ```
-
-Create `.agents/context/` or `.agents/skills/` only when the scope owns registered resources in that category.
 
 ## Create the Scope Map
 
-Use `AGENTS.md` frontmatter as the machine-readable registry:
+The lean frontmatter registry requires only identity metadata:
 
 ```yaml
 ---
 name: example-project
-description: Project scope for Example Project implementation and delivery workflows.
-scope:
-  type: project
-  parent: ../../AGENTS.md
-  children: []
-resources:
-  context:
-    - .agents/context/architecture.md
-  skills:
-    - .agents/skills/release-check/SKILL.md
+description: Independent scope for Example Project implementation and delivery.
 ---
 ```
 
-All paths resolve from the directory containing the declaring `AGENTS.md`. Root scopes use `parent: null`. Generated maps use empty arrays for empty registries.
+Add optional fields only when used:
 
-The body of `AGENTS.md` should remain a concise local map: describe local instructions, protected requirements, resource categories, and navigation behavior without duplicating registered bodies or descendant details.
+```yaml
+---
+name: example-workspace
+description: Shared entry scope for a portfolio of independent initiatives.
+type: workspace
+children:
+  - path: initiatives/example-project/AGENTS.md
+    when: Use for Example Project implementation, delivery, or its services.
+resources:
+  context:
+    - .agents/context/operating-model.md
+  skills:
+    - .agents/skills/portfolio-review/SKILL.md
+---
+```
 
-## Add Registered Context
+`type` and `confidential` are optional top-level annotations. `children` and `resources` are optional. All registered paths resolve from the directory containing the declaring `AGENTS.md`.
 
-Create focused files under `.agents/context/` or register an existing project document. Newly standardized files begin with:
+Keep the body concise: local instructions, protected requirements owned by this scope, and navigation behavior. Do not duplicate registered resource bodies or child details.
+
+## Register Local Context and Skills
+
+Every registered agent-addressable Markdown file begins with:
 
 ```yaml
 ---
@@ -68,32 +73,25 @@ description: Architecture boundaries and component relationships for Example Pro
 ---
 ```
 
-Add the path to `resources.context` in the local scope map. Registration, not directory membership, makes the document part of progressive discovery.
+Add context paths to `resources.context` and skill entry paths to `resources.skills`. Registration—not directory membership—makes a resource discoverable. Keep skill-owned templates and deterministic scripts inside the skill directory. Skill names must be unique along any composed route.
 
-## Add Registered Skills
+## Compose a Parent Entry from Children
 
-Each shared repeatable workflow lives in its own `.agents/skills/{skill-name}/` directory with `SKILL.md`. Skill-owned templates and deterministic scripts remain inside that skill directory.
+Composition is one-way:
 
-Add the `SKILL.md` path to `resources.skills` in the local scope map. Skill names must remain unique across an effective ancestor chain until explicit shadowing semantics are introduced.
+1. Create and validate the child as an independent scope.
+2. Add `{path, when}` to the broader entry's `children` array.
+3. Keep `when` as short as possible while clearly explaining when to inspect that child.
+4. Verify the selected child's authoritative `name` and `description` before entering it.
+5. Register only direct children; each child may register its own direct children.
 
-## Register Parent and Child Scopes
+Use `setup-agentic-scope register-child` to update only the parent map. Never add a parent pointer or parent-owned dependency to the child. The same child may be registered by several parents without modification.
 
-For a non-root scope:
-
-1. Set `scope.parent` to the direct parent's `AGENTS.md` using a path relative to the child map.
-2. Add the child map path to the parent's `scope.children` list using a path relative to the parent map.
-3. Inspect only the two map headers and verify the relationship in both directions.
-4. Do not register grandchildren at the parent.
-
-If the parent is unavailable in the current workspace, create the child with its intended parent pointer and record that reciprocal registration is pending. Runtime traversal must stop cleanly until the parent becomes accessible.
-
-Use the `setup-agentic-scope` skill to automate and validate this operation. Its setup command preflights accessible endpoints, preserves existing map bodies, updates both declarations through a rollback-capable transaction, and reports unavailable parents as boundaries.
+When several hints plausibly match a request, ask for clarification. Do not inspect every child body. A child that is opened independently has only its own context; broader context is available only when a session begins at or explicitly selects the broader entry.
 
 ## Optional Local Directory
 
-Create `.agents/local/` only when the scope needs developer-owned context, experimental skills, tracked plans, scratch work, or independent local history.
-
-The current flat-project scaffold contains:
+Create `.agents/local/` only when the scope owns developer-local context, experimental skills, tracked plans, scratch work, or independent local history:
 
 ```text
 .agents/local/
@@ -103,71 +101,77 @@ The current flat-project scaffold contains:
 └── plans/.gitkeep
 ```
 
-Outer ignore rules preserve the scaffold while ignoring developer-owned contents. Run the `setup-local-repo` skill when this local directory should become a nested Git repository. Local state is private by convention, not a secrets vault.
-
-When several applicable scopes contain `.agents/local/`, choose through the active scope or an explicit target. Never silently select a local directory based only on the nearest Git root.
+The active scope is the only implicit owner. If work was composed from a broader entry and another scope on that route should own local state, select it explicitly. Never fall back silently to a broader scope's local directory. Run `setup-local-repo` when the directory should become a nested Git repository. Local state is private by convention, not a secrets vault.
 
 ## Add Platform Integrations
 
-Follow `platform-adapters.md`. Create only the adapters required by the chosen platforms. Adapters reference canonical scope material and must not copy company, client, or project knowledge. Generate or repair them with `setup-agentic-scope`:
+Follow `platform-adapters.md` and generate only the adapters required by chosen platforms. Adapters point to canonical scope material and never copy business or project knowledge.
+
+Resolve the adapter command from the discovered skill directory:
 
 ```bash
-ruby .agents/skills/setup-agentic-scope/scripts/scope_tool.rb adapters \
+ruby "${SETUP_AGENTIC_SCOPE_SKILL_DIR}/scripts/scope_tool.rb" adapters \
   --scope path/to/AGENTS.md
 ```
 
 Use `--dry-run` before changing an unfamiliar installation and `--check` for read-only verification.
 
-## Migrate a Flat Installation
+## Migrate Existing Infrastructure
 
-A flat repository is already a valid one-node hierarchy.
+### Flat installation
 
-1. Add conforming scope-map frontmatter to the root `AGENTS.md`.
-2. Propose registrations from existing `.agents/context/` and `.agents/skills/` files.
-3. Review the proposal instead of silently registering every discovered file.
-4. Add required frontmatter to registered agent-addressable Markdown.
-5. Regenerate or repair platform adapters.
-6. Preserve the existing `.agents/local/` contract and tracked-plan locations.
+A flat project is already an independent one-scope installation:
 
-Do not introduce child scopes until a narrower scope provides material routing or context value.
+1. Add conforming `name` and `description` frontmatter to root `AGENTS.md`.
+2. Review and register context and skills individually.
+3. Add metadata to every registered agent-addressable Markdown file.
+4. Preserve `.agents/local/` and tracked-plan locations.
+5. Regenerate adapters and validate the scope.
+
+### Legacy bidirectional hierarchy
+
+The old schema is not supported:
+
+1. Remove the enclosing `scope` mapping and every child-side `parent` pointer.
+2. Move useful `scope.type` and `scope.confidential` values to top-level fields.
+3. Convert each parent child path to an object with `path` and a concise `when` hint.
+4. Confirm every former child operates correctly when its repository or directory is opened alone.
+5. Register each child from every intended broader entry; do not mutate the child.
+6. Resolve local ownership explicitly and remove all ancestor-local fallback assumptions.
+7. Regenerate adapters and run descendant validation from each composition entry.
 
 ### Reviewable migration sequence
 
-1. Work on a feature branch in the containing repository and record the current `AGENTS.md`, platform files, symlinks, and repository status.
-2. Run scope setup with `--dry-run`; review every proposed parent, child, resource, adapter, and optional local path.
-3. Preserve the existing `AGENTS.md` body while adding scope-map frontmatter. A flat installation remains a one-node hierarchy.
-4. Register context and skills individually after reviewing their metadata; do not infer registration from directory membership.
-5. Generate adapters, then run scope validation, adapter check mode, local-repository tests, and the isolated hierarchical fixture.
-6. Commit canonical infrastructure separately from developer-owned local-plan progress when those repositories are independent.
+1. Work on a feature branch in each outer repository and record current maps, adapters, symlinks, and status.
+2. Preview setup, registration, and adapter changes with `--dry-run`.
+3. Preserve existing `AGENTS.md` bodies while migrating frontmatter.
+4. Validate independent scopes first, then every intended composed route.
+5. Run tool, adapter, and local-repository regression tests.
+6. Commit canonical infrastructure separately from developer-owned local-plan progress when the repositories are independent.
 
 ### Rollback
 
-- Before commit, restore changed outer-repository files from the feature branch or a reviewed backup. Remove only newly generated files that carry the `Generated by setup-agentic-scope` marker.
-- Revert both sides of any parent/direct-child registration together; do not leave a one-sided route.
-- Do not delete, reset, or move an existing `.agents/local/.git/` while rolling back outer infrastructure. Its history is independent.
-- If a legacy plans-repository migration fails, use the safety snapshot path printed by `migrate_legacy_plans_repo.sh` and follow its history/refs verification before retrying.
-- After rollback, rerun flat-scope validation and confirm the original platform integration still resolves its canonical files.
+- Restore changed outer-repository files from the feature branch or reviewed backup.
+- Remove only newly generated files carrying the `Generated by setup-agentic-scope` marker.
+- Undo parent registrations without changing independent children.
+- Never delete, reset, or move an existing `.agents/local/.git/`; its history is independent.
 
 ## Migrate the Legacy Plans Repository
 
-For a project upgrading from the former `.agents/plans/` nested repository:
-
-```bash
-bash .agents/skills/setup-local-repo/scripts/migrate_legacy_plans_repo.sh
-```
-
-The migration preserves Git history and moves plans beneath `.agents/local/plans/`. Review the safety snapshot and staged changes before committing.
+For a project upgrading from the former `.agents/plans/` nested repository, resolve and run `migrate_legacy_plans_repo.sh` from the discovered `setup-local-repo` skill directory. The migration preserves Git history and moves plans beneath `.agents/local/plans/`.
 
 ## Verify
 
-- [ ] Every scope map has the required frontmatter and a concise body.
-- [ ] Registered parent and direct-child relationships are reciprocal or explicitly pending because an endpoint is inaccessible.
+- [ ] Every scope works independently with only `name` and `description` required.
+- [ ] Every child registration contains a valid path and concise routing hint.
+- [ ] Children contain no parent pointers or parent-dependent resources.
 - [ ] Registered resources exist and expose valid discovery metadata.
 - [ ] Registered paths resolve from their declaring scope.
-- [ ] No runtime workflow depends on recursive discovery of siblings or descendants.
-- [ ] Skill names are unique across each effective chain.
+- [ ] Routing follows only explicit direct-child entries and verifies selected child headers.
+- [ ] Ambiguous hints trigger clarification instead of broad disclosure.
+- [ ] Skill names are unique along every composed route.
 - [ ] Platform adapters reference canonical sources without duplicated scope knowledge.
-- [ ] Optional local directories have correct ownership, ignore, and privacy guidance.
-- [ ] Flat repositories and partial-access subtrees stop or inherit as expected.
+- [ ] Optional local state defaults only to its active owning scope.
+- [ ] Nested repositories and multiply registered children remain independently usable.
 
-Use `review-agentic-infra` for a complete audit. Its implementation must evolve with the normative architecture rather than treating this operational guide as the authority.
+Use `review-agentic-infra` for a complete audit. Its implementation must evolve with the normative architecture rather than treating this guide as the authority.

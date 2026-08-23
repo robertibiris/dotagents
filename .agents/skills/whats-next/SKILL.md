@@ -7,7 +7,7 @@ Surface the next actionable steps across every active plan so work can resume wi
 
 ## Resolve the plan root
 
-Run the `setup-agentic-scope` resolver from the active working path before enumeration. Scan only `selected_local.plans_path`. When the active scope has no local directory and several ancestors do, report the ambiguity and ask which scope's plans to resume; do not combine plan inventories across local repositories. A user may explicitly request several resolved plan roots, in which case report each root separately.
+Run the `setup-agentic-scope` resolver from the active working path before enumeration, passing `--entry` when the session intentionally began at a broader scope. Scan only `selected_local.plans_path`. When the active scope has no local directory, do not fall back; require an explicit `--local` owner on the composed route. A user may explicitly request several resolved plan roots, in which case report each separately.
 
 ## Behavior
 

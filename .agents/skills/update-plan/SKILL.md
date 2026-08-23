@@ -9,7 +9,7 @@ Update a tracked plan — statuses, new tasks, task revisions, or plan completio
 
 ## Resolve the plan root
 
-Before resolving `target`, run the `setup-agentic-scope` resolver from the operation's working path. Use `selected_local.plans_path` as the only implicit plan root. If multiple ancestor locals remain applicable, infer an explicit scope only from clear session context; otherwise stop and ask. Never choose a plan merely because another repository or local directory has a matching name.
+Before resolving `target`, run the `setup-agentic-scope` resolver from the operation's working path and pass `--entry` when the session intentionally began at a broader scope. Use `selected_local.plans_path` as the only implicit plan root. If the active scope owns no local directory, require an explicit `--local` owner on the composed route. Never choose a plan merely because another repository or local directory has a matching name.
 
 ## Inputs
 

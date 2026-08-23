@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+echo "This archived validator requires the bidirectional scope tool from commit c14b97c." >&2
+echo "The current one-way implementation intentionally rejects these historical fixtures." >&2
+exit 2
+
 experiment_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 explicit_root="$experiment_root/alternative-a-explicit/atlas-collective"
 native_root="$experiment_root/alternative-b-native/borealis-group"

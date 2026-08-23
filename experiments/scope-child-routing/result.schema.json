@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "selected", "verified", "reason"],
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": ["root", "selected", "none", "clarification_required"]
+    },
+    "selected": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "verified": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 240
+    }
+  }
+}

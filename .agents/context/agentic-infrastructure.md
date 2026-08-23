@@ -1,11 +1,11 @@
 ---
 name: agentic-infrastructure-architecture
-description: Normative architecture for hierarchical agentic scopes, progressive context disclosure, inheritance, access boundaries, and platform adapters.
+description: Normative architecture for independently usable agentic scopes, one-way composition, progressive context disclosure, local ownership, access boundaries, and platform adapters.
 ---
 
 # Agentic Infrastructure Architecture
 
-This document defines the canonical architecture for organizing instructions, context, skills, and developer-local state across companies, clients, projects, and other nested scopes. Operational setup steps and platform-specific mappings belong in separate documents derived from this contract.
+This document defines the canonical architecture for organizing instructions, context, skills, and developer-local state across independently usable scopes. Operational setup and platform-specific mappings derive from this contract.
 
 Normative terms such as **must**, **must not**, **should**, and **may** describe requirements, recommendations, and optional behavior.
 
@@ -13,20 +13,21 @@ Normative terms such as **must**, **must not**, **should**, and **may** describe
 
 The infrastructure must:
 
-- Scale from a single project to multi-company, multi-client, and multi-project trees.
+- Scale from one standalone project to composed trees of portfolios, initiatives, repositories, packages, services, or other meaningful boundaries.
+- Keep every scope useful without an external parent.
+- Compose broader context with selected descendants without modifying those descendants.
 - Disclose detailed context only when an operation requires it.
-- Produce deterministic navigation and path resolution.
-- Work when only part of a hierarchy is accessible.
-- Keep sibling scopes out of the effective context unless explicitly targeted.
-- Decouple context organization from Git repository layout.
+- Produce deterministic navigation and declaring-map-relative path resolution.
+- Keep unselected sibling scopes out of effective context.
+- Decouple context, repository, and access topologies.
 - Preserve one canonical source of truth across agent platforms.
-- Distinguish contextual boundaries from actual access control.
+- Distinguish discovery from actual access control.
 
 ## Core Model
 
 ### Context scope
 
-A **context scope** is a directory where specialized agent instructions or resources are useful. A scope is defined by an `AGENTS.md` entry point and may own `.agents/` resources.
+A **context scope** is a directory where specialized agent instructions or resources are useful. It is defined by an `AGENTS.md` entry point and may own `.agents/` resources:
 
 ```text
 scope/
@@ -37,212 +38,185 @@ scope/
     └── local/         # Optional developer-owned state
 ```
 
-A scope may represent a company, department, client, program, project, package, service, or another meaningful boundary. Scope type does not change the navigation protocol.
+Scope categories are descriptive, not behavioral. A scope may represent a portfolio, initiative, repository, product, project, client, company, package, service, or something else. The optional `type` field must never change navigation semantics.
 
 ### Independent topologies
 
-Three related topologies must remain conceptually independent:
+Three topologies remain independent:
 
-- **Context topology** — the declared parent and direct-child relationships between scopes.
-- **Repository topology** — the placement of Git repositories, including nested repositories.
-- **Access topology** — the files and directories a particular user or agent is authorized and technically able to read.
+- **Context topology** — directed parent-to-child registrations selected by an entry scope.
+- **Repository topology** — Git repository placement, including nested repositories.
+- **Access topology** — the files a user or agent is authorized and technically able to read.
 
-One repository may contain several context scopes. One context hierarchy may cross nested repository boundaries. A repository exposed by itself may contain only a subtree of a larger context hierarchy.
+One repository may contain several scopes. One composed context route may cross repository boundaries. The same standalone scope may be registered by several parents. Repository or filesystem permissions remain the real confidentiality boundary.
 
-Git roots must not be treated as universal context roots. Filesystem or workspace access must not be expanded merely because a declared context relationship exists.
+### One-way composition
+
+Composition flows only from a parent map to its registered direct children:
+
+```text
+entry scope -> selected child -> selected grandchild
+```
+
+A child must not declare or depend on a parent. A parent may register a child without modifying it, and the same child may participate in several compositions. There is no upward traversal contract.
+
+Two modes follow:
+
+- **Standalone session** — begin at a scope and receive only that scope and descendants explicitly selected from it.
+- **Composed session** — begin at a broader entry scope, follow one or more registered child routes required by the task, and apply the selected route from entry to target.
+
+If broader context is required, the session must begin at or explicitly select that broader entry scope. A leaf opened independently must not attempt to discover an undeclared ancestor.
 
 ## `AGENTS.md` as a Scope Map
 
-Each `AGENTS.md` must remain a concise map of its own scope. It must provide enough information to decide where relevant knowledge can be found without embedding every detail.
+Each `AGENTS.md` is a concise map of its own scope. Its frontmatter provides deterministic identity, routing, and local resource registration. Its body contains instructions owned by that scope.
 
-A scope map must identify:
-
-- The scope's name, description, and optional type.
-- Its direct parent, or that it has no declared parent.
-- Its registered direct children.
-- Its registered local context resources.
-- Its registered local skills.
-- Any protected local instructions that descendants may not weaken.
-- The path-resolution and progressive-disclosure rules, directly or through the normative architecture reference.
-
-A parent must know only its own details and its registered direct children. It must not preload child details. A child must know only its own details, direct parent, and registered direct children.
-
-## Progressive Disclosure
-
-Progressive disclosure separates **awareness** of a resource from **loading** that resource.
-
-### Discovery stages
-
-1. **Map awareness** — read the active `AGENTS.md` map.
-2. **Directional choice** — determine whether the operation needs the current scope, an ancestor, or a particular direct child.
-3. **Metadata inspection** — inspect only registered resource metadata.
-4. **Resource selection** — compare names and descriptions to the operation.
-5. **Body expansion** — read the complete body only for selected resources.
-6. **Further navigation** — follow another declared scope pointer only when the operation requires it.
-
-Agents must not read every registered context file merely because it is visible. They must not recursively enumerate descendants or siblings to build a global catalog at runtime.
-
-### Registered agent-addressable Markdown
-
-The metadata requirement applies only to Markdown registered for agent use, including:
-
-- `AGENTS.md` scope maps.
-- `.agents/context/**/*.md` reference documents registered by a scope.
-- `.agents/skills/*/SKILL.md` skill definitions registered by a scope.
-- Agentic infrastructure reference documents.
-- Tracked-plan documents governed by their existing richer metadata conventions.
-
-Ordinary product documentation is not agent-addressable merely because it is Markdown. A scope may explicitly register an ordinary document when agents should discover it through this protocol.
-
-Newly standardized agent-addressable Markdown must expose YAML frontmatter with at least:
+Minimum leaf map:
 
 ```yaml
 ---
-name: stable-resource-name
-description: A substantive explanation of when and why an agent should read this resource.
+name: atlas-runtime
+description: Standalone scope for building and operating the Atlas runtime.
 ---
 ```
 
-Existing registered formats with richer metadata may retain their established schema when it provides equivalent identification and discovery information.
+Composing map:
 
-### Metadata-only inspection
+```yaml
+---
+name: product-portfolio
+description: Entry scope for shared portfolio conventions and product routing.
+type: portfolio
+children:
+  - path: products/atlas/AGENTS.md
+    when: Use for Atlas product development or its production runtime.
+resources:
+  context:
+    - .agents/context/shared-conventions.md
+  skills:
+    - .agents/skills/portfolio-review/SKILL.md
+---
+```
 
-Discovery tooling must be able to return a resource's path, name, and description without returning its body. Header extraction must terminate at the closing frontmatter delimiter rather than reading an arbitrary line count.
+Only `name` and `description` are universally required. `type`, `confidential`, `children`, and `resources` may be omitted when unused. Tooling must treat missing collections as empty and must not generate empty scaffolding solely to satisfy a schema.
 
-Generated indexes or catalogs may cache extracted metadata for efficiency, but they are disposable derived artifacts. Source-file metadata remains authoritative.
+### Child registration
 
-## Navigation Protocol
+Every direct child registration contains:
 
-### Active scope
+- `path` — path to the child's `AGENTS.md`, resolved from the parent map.
+- `when` — concise parent-owned guidance describing when this parent should route work to that child.
 
-The **active scope** is the closest applicable scope to the operation's working location or explicitly selected target. If multiple candidate scopes are equally applicable, tooling must report ambiguity rather than choose silently.
+The routing hint describes the relationship, not the child's identity. The child remains authoritative for its own `name` and `description`. A parent must not duplicate child bodies or register grandchildren.
 
-### Ancestors
+Routing hints are required because path-only registration was empirically shown to cause incorrect routing and costly metadata fan-out with opaque or semantically selected children. Hints should use the fewest words that reliably distinguish the route.
 
-To obtain ancestor guidance:
+### Scope independence
 
-1. Read the active scope map.
-2. Follow its declared direct-parent pointer.
-3. Repeat only while another ancestor is required and readable.
-4. Apply gathered scope instructions from the highest accessible ancestor down to the active scope.
+A scope and its owned resources should stand alone. A child skill must not require a parent. A parent skill must not require a particular named child, though a generic orchestration skill may operate on a user-selected registered child through the composition contract.
 
-If a declared parent is missing or inaccessible, traversal stops. The agent must report the boundary when it materially affects the operation and must not infer the missing scope's contents.
+## Effective Context
 
-### Children
+The **entry scope** is the deliberate starting point for a session or resolver operation. The **active scope** is the deepest selected scope relevant to the current target. The **effective route** is the ordered list from entry to active scope.
 
-To enter a descendant:
+Instructions and selected resources may accumulate only along that route. Unselected children and siblings are outside effective context.
 
-1. Consult only the active scope's direct-child registry.
-2. Select a child whose name and description match the operation.
-3. Read that child's scope map.
-4. Repeat only if a deeper descendant is required.
+```text
+portfolio -> selected initiative -> selected project
+```
 
-Runtime navigation must not use recursive filesystem scanning as a substitute for registration.
+Opening the project independently instead produces:
 
-### Siblings
+```text
+project
+```
 
-Sibling scopes are outside the effective context by default. An agent may enter a sibling only when the operation explicitly targets it, the common parent routes to it, and access is already granted.
+Descendants may specialize instructions from the composed route but must not silently weaken protected security, privacy, compliance, confidentiality, or access requirements already applied by that session.
 
-## Registration and Determinism
+## Progressive Disclosure
 
-Parent and child relationships are bidirectional declarations:
+Progressive disclosure separates awareness from body loading:
 
-- A parent registers each direct child.
-- A child registers its direct parent.
+1. Read the current scope map.
+2. Compare the request with direct-child `when` hints and local resource metadata.
+3. If no child applies, remain at the current scope.
+4. If one child applies, read that child's frontmatter to verify its authoritative identity and description.
+5. If several hints materially match, inspect those plausible child headers and request clarification rather than choosing silently.
+6. Enter only the selected child and repeat if deeper routing is required.
+7. Read complete context or skill bodies only after their metadata establishes relevance.
 
-Setup and repair tooling should update both declarations atomically. Validation must detect:
+Agents must not recursively enumerate descendants or preload siblings. Metadata inspection may batch a defensible candidate set when hints do not fully distinguish a route, but broad inspection is a fallback rather than the default.
 
-- A parent entry with no matching child declaration.
-- A child declaration missing from its parent.
-- Missing, unreadable, or malformed scope maps.
-- Cycles and self-parenting.
-- Duplicate child identifiers.
-- Unregistered candidate scopes, reported as suggestions rather than silently added.
+## Resource Ownership and Paths
 
-Explicit registration is the runtime contract. Automation maintains that contract; it does not replace it with agent judgment.
+`resources.context` and `resources.skills` register resources owned by the declaring scope. They never register resources owned by descendants.
 
-## Resource Path Semantics
+Every relative path resolves from the directory containing the map or resource that declares it. Paths must never implicitly resolve from the process working directory. Inspection output must retain declaring and resolved path provenance.
 
-Every relative resource or scope path must resolve from the directory containing the file that declares it. It must never implicitly resolve from the agent's current working directory.
-
-Tools must retain the declaring file's path when extracting links or metadata. When an agent receives merged instructions without source-path provenance, it must use an explicit scope root or resolver rather than guess.
-
-This rule applies to:
-
-- Parent and direct-child pointers.
-- Context and skill registrations.
-- Templates, scripts, and other skill-owned assets.
-- Platform adapter references.
-
-## Inheritance and Conflicts
-
-Instructions apply from the highest accessible ancestor to the active leaf.
-
-Descendants may specialize general ancestor guidance for their narrower domain. They must not silently weaken instructions explicitly marked as protected, including security, privacy, compliance, confidentiality, and access-boundary requirements.
-
-When instructions genuinely conflict and the contract does not establish precedence, the agent must surface the conflict and request direction. It must not resolve material ambiguity by guessing.
-
-Skill names must be unique across an effective scope chain in the initial implementation. Validation must report duplicates rather than assume shadowing or merging semantics.
+Resource descriptions remain authoritative in each resource's own frontmatter. Scope maps list paths; tooling derives compact catalogs by inspecting registered headers rather than duplicating descriptions.
 
 ## Access and Confidentiality
 
-The hierarchy controls discovery, not permission.
+The hierarchy controls discovery, not permission. An agent follows a registered route only when its current environment already permits that path to be read. It must not request broader access merely to complete a tree.
 
-An agent must follow a pointer only when its existing environment permits the target to be read. It must not request broader access merely to complete the scope chain unless the user's operation independently requires that access.
-
-Infrastructure validation must detect declared cross-sibling references. It may warn when scopes marked confidential share a repository or readable workspace, but this is not proof of a security defect: an authorized company owner may intentionally have access to multiple clients.
-
-Repository permissions, workspace configuration, and filesystem controls remain the actual confidentiality boundary.
+Sibling isolation is a runtime rule, not a security mechanism. Confidential scopes that must not be mutually visible require repository, workspace, or filesystem isolation.
 
 ## Optional Local State
 
-Any context scope may opt into `.agents/local/`. Context scopes and local repositories do not have a one-to-one relationship.
+Any scope may own `.agents/local/`. Context scopes and local repositories do not have a one-to-one relationship.
 
-The local directory is created only when requested. It may contain personal context, experimental skills, tracked plans, scratch work, and other developer-owned state. When it is versioned as a nested repository, its ignore rules, privacy guidance, and history remain independent of the containing repository.
+Local state belongs to an explicitly selected owning scope. By default, tooling selects the active scope's local directory only when it exists. It must not silently fall back to an entry or intermediate scope's local directory. A caller may explicitly select another local directory owned by the effective route.
 
-Tooling must not assume the repository root is the only possible local directory. If more than one applicable local directory exists, the active scope or an explicit target must determine which one is used; ambiguity must be reported.
+This prevents project work from silently landing in portfolio or initiative plans while still allowing deliberate cross-scope initiatives.
 
 ## Platform Adapters
 
-Canonical scope knowledge lives in `AGENTS.md` and `.agents/`. Platform-specific configuration must remain a thin adapter that references or exposes canonical material.
+Canonical knowledge lives in `AGENTS.md` and `.agents/`. Platform-specific files are thin, disposable adapters.
 
-Native platform behavior may accelerate discovery, but correctness must not depend exclusively on it. Adapters may differ by platform and surface as long as they produce equivalent effective scope behavior.
-
-Adapter tooling must be idempotent and should generate or repair configuration from canonical scope declarations. Developers should not need to understand symlink layouts, rule formats, or platform-specific discovery mechanics for normal use.
+Native platform discovery may accelerate local behavior, but correctness must follow the explicit entry scope and registered downward routes. Each independently opened scope may generate its own adapters. An adapter must not recreate parent links or flatten skills from several scopes.
 
 ## Validation Requirements
 
-A conforming validator must be able to check, without reading every context body:
+A conforming validator must check, without reading context or skill bodies:
 
-- Scope-map metadata and required sections.
-- Parent/direct-child reciprocity and acyclic navigation.
-- Declaring-scope path resolution.
-- Registered resource existence and frontmatter validity.
-- Duplicate effective skill names.
+- Scope-map and registered-resource metadata.
+- Required `{path, when}` child entries.
+- Child paths, duplicate child identifiers, and directed cycles.
+- Declaring-map-relative path resolution.
+- Duplicate effective skill names along each composed route.
 - Cross-sibling resource references.
-- Platform adapter integrity and source-of-truth compliance.
-- Optional local-directory ownership and ignore boundaries.
-- Compatibility with flat single-scope repositories.
+- Optional confidential-sibling co-location warnings.
+- Platform adapter integrity.
+- Optional local ownership and ignore boundaries.
+- Standalone flat scopes and shared children registered by several parents.
 
-Warnings about confidentiality co-location must remain distinguishable from structural errors.
+Validation must not require child-to-parent reciprocity because no such relationship exists.
 
 ## Required Behavioral Scenarios
 
 Implementations must retain regression coverage for:
 
-1. A full company → client → project chain.
-2. Starting at a client and consulting a relevant company ancestor.
-3. Starting at a parent and entering one explicitly selected direct child.
-4. A missing or inaccessible ancestor with usable descendant scopes.
-5. Multiple readable sibling scopes with no accidental sibling disclosure.
-6. Several context scopes inside one repository.
-7. A context chain crossing nested repository boundaries.
+1. A standalone one-scope repository.
+2. An entry scope routing to one selected direct child by `when` hint.
+3. Nested routing through direct-child maps without loading siblings.
+4. A child operating independently with no ancestor knowledge.
+5. The same child registered by more than one parent.
+6. A context route crossing nested repository boundaries.
+7. A target resolved from an explicit entry scope.
 8. Metadata-only inspection followed by selective body loading.
-9. Relative context links whose declaring scope differs from the active working directory.
-10. Equivalent effective behavior through supported platform adapters.
+9. Genuine child ambiguity producing clarification.
+10. Local state selected from the active scope or an explicit route owner.
+11. Equivalent canonical behavior through supported adapters.
+12. Cycle, duplicate-skill, and cross-sibling validation failures.
 
-## Compatibility and Migration
+## Migration
 
-A flat repository with one root `AGENTS.md` and one root `.agents/` directory is a valid one-node hierarchy. Existing flat installations should continue working while hierarchical capabilities are added.
+The former bidirectional schema is not supported after migration. Migrators must:
 
-Migration must not require moving project documentation or local state merely to satisfy the new model. Additional scopes should be introduced only where narrower maps, context, or skills provide material value.
+1. Remove `scope.parent` and the enclosing `scope` mapping.
+2. Move optional `scope.type` and `scope.confidential` to top-level `type` and `confidential`.
+3. Convert every child path into `{path, when}` after a human reviews the routing hint.
+4. Preserve local resources, map bodies, local repositories, and Git history.
+5. Validate each standalone scope and every intended entry tree.
+
+A flat installation remains a valid standalone scope. Additional children should be registered only when they provide material routing or context value.

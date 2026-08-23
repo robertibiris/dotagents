@@ -10,7 +10,7 @@ Review and audit the AI agent infrastructure. This includes context files (docum
 ## Review scope
 
 ### Context files to review:
-- The explicitly selected active `AGENTS.md` and scope maps reachable through its declared parent/direct-child registry
+- The explicitly selected entry `AGENTS.md` and scope maps reachable through its registered direct children
 - Each participating scope's `.agents/` directory:
   - `context/*.md` — all context files
   - `skills/*/SKILL.md` — all skill definitions
@@ -35,7 +35,7 @@ Review and audit the AI agent infrastructure. This includes context files (docum
 
 ## Resolve review boundaries
 
-Run the `resolve` command bundled with `setup-agentic-scope` from the operation's working path, or use a scope explicitly named by the user. Do not substitute the nearest Git root for the context scope. If several local directories are applicable, audit shared infrastructure first and ask which local owner is intended before inspecting plan state.
+Run the `resolve` command bundled with `setup-agentic-scope` from the operation's working path, using `--entry` when the review intentionally begins at a broader composition scope. Do not substitute the nearest Git root. The active scope is the only implicit local owner; require explicit `--local` selection before inspecting another route scope's plan state.
 
 Repository and filesystem permissions are the confidentiality boundary. Scope validation can prove routing consistency and detect suspicious references; it cannot prove that readable sibling content is inaccessible.
 
@@ -43,7 +43,7 @@ Repository and filesystem permissions are the confidentiality boundary. Scope va
 
 ### Step 1: Inventory agent infrastructure
 
-1. **Identify scope maps deterministically**: Read the active map's frontmatter, then traverse only declared parents and registered direct children. Queue each registered child map; do not recursively search the filesystem for `AGENTS.md` files. Use explicit candidate containers only when the user asks to find unregistered scopes.
+1. **Identify scope maps deterministically**: Read the selected entry map's frontmatter, then traverse only registered direct children. Queue each child map; do not search the filesystem recursively for `AGENTS.md`. Use explicit candidate containers only when the user asks to find unregistered scopes.
 2. **Inspect metadata first**: Extract headers from registered context and skills without bodies. Select bodies for review only after their descriptions establish relevance to infrastructure quality.
 3. **Identify skills and assets**: From each selected scope, inspect registered `SKILL.md` files and their directly owned templates/scripts. Directory membership alone does not register a resource.
 4. **Identify scripts**: Inspect scripts owned by selected registered skills while excluding developer-local contents.
@@ -60,7 +60,7 @@ For each context file, evaluate against:
 4. **Best Practices** — single source of truth (no duplication), platform files reference core context, proper separation of concerns, modular design.
 5. **Maintainability** — easy to update, clear relationships, portable where applicable, logical structure.
 6. **Ownership boundary** — shared guidance and assets remain outer-tracked; developer-owned state remains local and ignored.
-7. **Hierarchy integrity** — reciprocal routes, cycles, duplicate effective skill names, cross-sibling references, partial-access boundaries, and adapter integrity are reported distinctly.
+7. **Composition integrity** — mandatory routing hints, child independence, route cycles, duplicate effective skill names, cross-sibling references, and adapter integrity are reported distinctly.
 
 ### Step 3: Review skills
 
@@ -78,8 +78,8 @@ For each script, evaluate: efficacy, clarity, modularity, maintainability, scala
 
 - Treat a cross-sibling registered resource reference as a structural error.
 - When multiple direct children explicitly marked confidential share one readable Git repository, report a warning for deliberate review, not a proven security defect.
-- Treat missing ancestors as access-boundary warnings when the accessible subtree is otherwise valid.
-- Report ambiguous `.agents/local/` ownership and do not inspect or mutate developer plan contents until resolved.
+- Reject child-side parent pointers and other dependencies on a broader entry.
+- Do not inspect or mutate another route scope's `.agents/local/` until it is selected explicitly.
 
 ## Output format
 

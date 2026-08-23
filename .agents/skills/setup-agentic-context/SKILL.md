@@ -28,7 +28,7 @@ None.
 
 - A conforming `AGENTS.md` exists at the chosen scope and acts as its canonical map.
 - Registered `.agents/context/` and `.agents/skills/` resources expose progressive-disclosure metadata.
-- Direct parent and child declarations are reciprocal when both endpoints are accessible.
+- Every scope is independently usable; broader entry scopes compose direct children through parent-owned routing hints.
 - Optional `.agents/local/` state is created only when requested and may be independently versioned through `setup-local-repo`.
 - Tracked plans, when enabled for the scope, live under its `.agents/local/plans/`; their templates remain with the shared skills that consume them.
 - Platform adapters follow `platform-adapters.md`, preserve a single source of truth, and are validated for the chosen surface.

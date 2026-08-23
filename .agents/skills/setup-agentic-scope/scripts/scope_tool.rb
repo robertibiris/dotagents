@@ -9,18 +9,19 @@ require "yaml"
 
 module AgenticScope
   MAX_FRONTMATTER_BYTES = 65_536
-  REQUIRED_SCOPE_KEYS = %w[name description scope resources].freeze
+  REQUIRED_SCOPE_KEYS = %w[name description].freeze
   REQUIRED_RESOURCE_KEYS = %w[name description].freeze
   HELP = <<~TEXT.freeze
     Usage: scope_tool.rb COMMAND [options]
 
     Commands:
-      setup       Create, register, or repair a scope
-      resolve     Resolve the active scope and applicable local directory
+      setup       Create or repair an independently usable scope
+      register-child  Register or update one direct child on a parent scope
+      resolve     Resolve a standalone scope or an explicit composed route
       inspect     Read registered scope and resource metadata without bodies
       candidates  Report direct-child candidates under explicit containers
       adapters    Generate, repair, or check thin platform adapters
-      validate    Validate schema, relationships, resources, and skill names
+      validate    Validate schema, descendant routes, resources, and skill names
 
     Run scope_tool.rb COMMAND --help for command-specific options.
   TEXT
@@ -101,22 +102,54 @@ module AgenticScope
   def validate_scope_header!(data, path)
     REQUIRED_SCOPE_KEYS.each { |key| raise ToolError, "Missing '#{key}' in #{path}" unless data.key?(key) }
     validate_resource_header!(data, path)
+    if data.key?("scope")
+      raise ToolError, "Legacy 'scope' mapping is unsupported in #{path}; migrate type/confidential to top-level fields and replace parent/children with one-way child entries"
+    end
 
-    scope = data["scope"]
-    resources = data["resources"]
-    raise ToolError, "'scope' must be a mapping in #{path}" unless scope.is_a?(Hash)
+    unless data["type"].nil? || (data["type"].is_a?(String) && !data["type"].strip.empty?)
+      raise ToolError, "'type' must be a non-empty string in #{path}"
+    end
+    unless data["confidential"].nil? || data["confidential"] == true || data["confidential"] == false
+      raise ToolError, "'confidential' must be true or false in #{path}"
+    end
+    children = data.fetch("children", [])
+    raise ToolError, "'children' must be an array in #{path}" unless children.is_a?(Array)
+    seen_paths = {}
+    children.each_with_index do |child, index|
+      raise ToolError, "'children[#{index}]' must be a mapping in #{path}" unless child.is_a?(Hash)
+      %w[path when].each do |key|
+        value = child[key]
+        raise ToolError, "Missing or empty 'children[#{index}].#{key}' in #{path}" unless value.is_a?(String) && !value.strip.empty?
+      end
+      raise ToolError, "Duplicate child path '#{child['path']}' in #{path}" if seen_paths[child["path"]]
+      unless File.basename(child["path"]) == "AGENTS.md"
+        raise ToolError, "'children[#{index}].path' must point to AGENTS.md in #{path}"
+      end
+      seen_paths[child["path"]] = true
+    end
+
+    resources = data.fetch("resources", {})
     raise ToolError, "'resources' must be a mapping in #{path}" unless resources.is_a?(Hash)
-    raise ToolError, "Missing or empty 'scope.type' in #{path}" unless scope["type"].is_a?(String) && !scope["type"].strip.empty?
-    unless scope["confidential"].nil? || scope["confidential"] == true || scope["confidential"] == false
-      raise ToolError, "'scope.confidential' must be true or false in #{path}"
-    end
-    unless scope["parent"].nil? || scope["parent"].is_a?(String)
-      raise ToolError, "'scope.parent' must be a path or null in #{path}"
-    end
-    raise ToolError, "'scope.children' must be an array in #{path}" unless scope["children"].is_a?(Array)
     %w[context skills].each do |key|
-      raise ToolError, "'resources.#{key}' must be an array in #{path}" unless resources[key].is_a?(Array)
+      value = resources.fetch(key, [])
+      raise ToolError, "'resources.#{key}' must be an array in #{path}" unless value.is_a?(Array)
+      seen_resources = {}
+      value.each_with_index do |declared, index|
+        unless declared.is_a?(String) && !declared.strip.empty?
+          raise ToolError, "'resources.#{key}[#{index}]' must be a non-empty path string in #{path}"
+        end
+        raise ToolError, "Duplicate resource path '#{declared}' in resources.#{key} of #{path}" if seen_resources[declared]
+        seen_resources[declared] = true
+      end
     end
+  end
+
+  def child_entries(data)
+    data.fetch("children", [])
+  end
+
+  def resource_paths(data, kind)
+    data.fetch("resources", {}).fetch(kind, [])
   end
 
   def resolve_declared(declaring_map, declared_path)
@@ -144,42 +177,7 @@ module AgenticScope
       declared_by: declared_by || path,
       declared_path: declared_path || File.basename(path),
       resolved_path: path
-    ).merge("scope_type" => data.dig("scope", "type"))
-  end
-
-  def boundary_record(declared_by, declared_path, resolved_path)
-    {
-      "kind" => "boundary",
-      "declared_by" => declared_by,
-      "declared_path" => declared_path,
-      "resolved_path" => resolved_path,
-      "reason" => "missing_or_inaccessible"
-    }
-  end
-
-  def inspect_chain(start_map)
-    records = []
-    boundaries = []
-    visited = {}
-    current = start_map
-
-    loop do
-      raise ToolError, "Parent cycle detected at #{current}" if visited[current]
-      visited[current] = true
-      data, = read_frontmatter(current)
-      validate_scope_header!(data, current)
-      records << scope_record(current)
-      parent = data.dig("scope", "parent")
-      break unless parent
-
-      resolved = resolve_declared(current, parent)
-      unless File.file?(resolved) && File.readable?(resolved)
-        boundaries << boundary_record(current, parent, resolved)
-        break
-      end
-      current = resolved
-    end
-    [records.reverse, boundaries]
+    ).merge("scope_type" => data["type"])
   end
 
   def deduplicate_records(records)
@@ -196,12 +194,11 @@ module AgenticScope
     data, = read_frontmatter(map_path)
     validate_scope_header!(data, map_path)
     records = []
-    boundaries = []
 
     records << scope_record(map_path) if includes.include?("map")
 
     if includes.include?("resources")
-      { "context" => data.dig("resources", "context"), "skill" => data.dig("resources", "skills") }.each do |kind, paths|
+      { "context" => resource_paths(data, "context"), "skill" => resource_paths(data, "skills") }.each do |kind, paths|
         paths.each do |declared_path|
           resolved = resolve_declared(map_path, declared_path)
           resource_data, = read_frontmatter(resolved)
@@ -217,32 +214,16 @@ module AgenticScope
       end
     end
 
-    if includes.include?("parent")
-      parent = data.dig("scope", "parent")
-      if parent
-        resolved = resolve_declared(map_path, parent)
-        if File.file?(resolved) && File.readable?(resolved)
-          records << scope_record(resolved, declared_by: map_path, declared_path: parent)
-        else
-          boundaries << boundary_record(map_path, parent, resolved)
-        end
-      end
-    end
-
     if includes.include?("children")
-      data.dig("scope", "children").each do |child|
-        resolved = resolve_declared(map_path, child)
-        records << scope_record(resolved, declared_by: map_path, declared_path: child)
+      child_entries(data).each do |child|
+        declared = child.fetch("path")
+        resolved = resolve_declared(map_path, declared)
+        records << scope_record(resolved, declared_by: map_path, declared_path: declared)
+          .merge("routing_hint" => child.fetch("when"))
       end
     end
 
-    if includes.include?("chain")
-      chain_records, chain_boundaries = inspect_chain(map_path)
-      records.concat(chain_records)
-      boundaries.concat(chain_boundaries)
-    end
-
-    { "records" => deduplicate_records(records), "boundaries" => boundaries.uniq }
+    { "records" => deduplicate_records(records), "boundaries" => [] }
   end
 
   def nearest_scope_map(start_path)
@@ -257,10 +238,38 @@ module AgenticScope
     raise ToolError, "No readable AGENTS.md found at or above: #{start_path}"
   end
 
-  def resolve_active_scope(start_path, explicit_local = nil)
-    active_map = nearest_scope_map(start_path)
-    chain, boundaries = inspect_chain(active_map)
-    local_candidates = chain.each_with_object([]) do |record, candidates|
+  def composed_route(entry_map, target_path)
+    target = File.directory?(target_path) ? absolute(target_path) : File.dirname(absolute(target_path))
+    route = []
+    current = scope_map_path(entry_map)
+    visited = {}
+
+    loop do
+      raise ToolError, "Child-registration cycle detected at #{current}" if visited[current]
+      visited[current] = true
+      data, = read_frontmatter(current)
+      validate_scope_header!(data, current)
+      current_dir = File.dirname(current)
+      unless path_within?(target, current_dir)
+        raise ToolError, "Target #{target} is outside the composed entry scope #{entry_map}"
+      end
+      route << scope_record(current)
+      matching = child_entries(data).select do |child|
+        child_map = resolve_declared(current, child.fetch("path"))
+        path_within?(target, File.dirname(child_map))
+      end
+      raise ToolError, "Several direct children match target #{target} from #{current}" if matching.length > 1
+      break if matching.empty?
+      current = resolve_declared(current, matching.first.fetch("path"))
+    end
+    route
+  end
+
+  def resolve_active_scope(start_path, entry_scope = nil, explicit_local = nil)
+    entry_map = entry_scope ? scope_map_path(entry_scope) : nearest_scope_map(start_path)
+    route = composed_route(entry_map, start_path)
+    active_map = route.last.fetch("resolved_path")
+    local_candidates = route.each_with_object([]) do |record, candidates|
       local_path = File.join(File.dirname(record["resolved_path"]), ".agents", "local")
       next unless File.directory?(local_path) && File.readable?(local_path)
       candidates << {
@@ -276,31 +285,26 @@ module AgenticScope
     if explicit_local
       requested = absolute(explicit_local)
       selected = local_candidates.find { |candidate| candidate["path"] == requested }
-      raise ToolError, "Explicit local directory is not applicable to the active scope chain: #{requested}" unless selected
+      raise ToolError, "Explicit local directory is not owned by the composed route: #{requested}" unless selected
       selection_reason = "explicit"
     else
       active_local = local_candidates.find { |candidate| candidate["scope"] == active_map }
       if active_local
         selected = active_local
         selection_reason = "active_scope"
-      elsif local_candidates.length == 1
-        selected = local_candidates.first
-        selection_reason = "only_applicable"
       end
     end
-
-    ambiguous = selected.nil? && local_candidates.length > 1
-    warnings = boundaries.map { |item| "Parent boundary is missing or inaccessible: #{item['resolved_path']}" }
-    warnings << "No applicable .agents/local directory was found" if local_candidates.empty?
-    warnings << "Multiple ancestor local directories are applicable; pass --local explicitly" if ambiguous
+    warnings = []
+    warnings << "The active scope owns no .agents/local directory; pass --local explicitly to select another scope on the composed route" if selected.nil?
     {
+      "entry_scope" => route.first,
       "active_scope" => scope_record(active_map),
-      "chain" => chain,
+      "route" => route,
       "local_candidates" => local_candidates,
       "selected_local" => selected,
       "selection_reason" => selection_reason,
-      "ambiguous" => ambiguous,
-      "boundaries" => boundaries,
+      "ambiguous" => false,
+      "boundaries" => [],
       "warnings" => warnings
     }
   end
@@ -363,22 +367,21 @@ module AgenticScope
       data, body = read_frontmatter(map_path, include_body: true)
       validate_scope_header!(data, map_path)
     else
-      %i[name description type].each do |key|
+      %i[name description].each do |key|
         raise ToolError, "--#{key} is required for a new scope" if options[key].to_s.strip.empty?
       end
       data = {
         "name" => options[:name],
-        "description" => options[:description],
-        "scope" => { "type" => options[:type], "parent" => nil, "children" => [] },
-        "resources" => { "context" => [], "skills" => [] }
+        "description" => options[:description]
       }
+      data["type"] = options[:type] if options[:type]
       body = new_scope_body(options[:name])
     end
 
     data["name"] = options[:name] if options[:name]
     data["description"] = options[:description] if options[:description]
-    data["scope"]["type"] = options[:type] if options[:type]
-    data["scope"]["confidential"] = true if options[:confidential]
+    data["type"] = options[:type] if options[:type]
+    data["confidential"] = true if options[:confidential]
 
     { context: "context", skills: "skill" }.each do |option_key, kind|
       options.fetch(option_key, []).each do |resource_path|
@@ -387,51 +390,56 @@ module AgenticScope
         validate_resource_header!(resource_data, resolved)
         declared = relative_path(resolved, scope_dir)
         list_key = kind == "skill" ? "skills" : "context"
+        data["resources"] ||= {}
+        data["resources"][list_key] ||= []
         data["resources"][list_key] << declared unless data["resources"][list_key].include?(declared)
       end
     end
 
-    parent_changes = {}
-    boundaries = []
-    if options[:parent]
-      old_parent_declared = data.dig("scope", "parent")
-      old_parent_map = old_parent_declared ? resolve_declared(map_path, old_parent_declared) : nil
-      new_parent_map = scope_map_path(options[:parent], scope_dir)
-      data["scope"]["parent"] = relative_path(new_parent_map, scope_dir)
-
-      if old_parent_map && old_parent_map != new_parent_map
-        if File.file?(old_parent_map) && File.readable?(old_parent_map)
-          old_data, old_body = read_frontmatter(old_parent_map, include_body: true)
-          validate_scope_header!(old_data, old_parent_map)
-          old_child_path = relative_path(map_path, File.dirname(old_parent_map))
-          old_data["scope"]["children"].delete(old_child_path)
-          parent_changes[old_parent_map] = render_frontmatter(old_data, old_body)
-        else
-          boundaries << boundary_record(map_path, old_parent_declared, old_parent_map)
-        end
-      end
-
-      if File.file?(new_parent_map) && File.readable?(new_parent_map)
-        parent_data, parent_body = read_frontmatter(new_parent_map, include_body: true)
-        validate_scope_header!(parent_data, new_parent_map)
-        child_path = relative_path(map_path, File.dirname(new_parent_map))
-        parent_data["scope"]["children"] << child_path unless parent_data["scope"]["children"].include?(child_path)
-        parent_changes[new_parent_map] = render_frontmatter(parent_data, parent_body)
-      else
-        boundaries << boundary_record(map_path, data["scope"]["parent"], new_parent_map)
-      end
-    end
-
     validate_scope_header!(data, map_path)
-    changes = parent_changes.to_a
-    changes << [map_path, render_frontmatter(data, body)]
+    changes = [[map_path, render_frontmatter(data, body)]]
     changes.concat(local_changes(scope_dir, data["name"])) if options[:with_local]
     result = {
       "operation" => options[:dry_run] ? "dry_run" : "setup",
       "scope" => map_path,
       "changes" => changes.map(&:first),
-      "boundaries" => boundaries,
-      "boundary" => boundaries.first
+      "boundaries" => [],
+      "boundary" => nil
+    }
+    return result if options[:dry_run]
+
+    apply_transaction(changes)
+    result
+  end
+
+  def register_child(options)
+    parent_map = scope_map_path(options.fetch(:scope))
+    child_map = scope_map_path(options.fetch(:child), File.dirname(parent_map))
+    raise ToolError, "--child must resolve to AGENTS.md: #{child_map}" unless File.basename(child_map) == "AGENTS.md"
+    hint = options.fetch(:when).to_s.strip
+    raise ToolError, "--when must be a concise non-empty routing hint" if hint.empty?
+
+    parent_data, parent_body = read_frontmatter(parent_map, include_body: true)
+    validate_scope_header!(parent_data, parent_map)
+    child_data, = read_frontmatter(child_map)
+    validate_scope_header!(child_data, child_map)
+
+    declared = relative_path(child_map, File.dirname(parent_map))
+    parent_data["children"] ||= []
+    existing = parent_data["children"].find { |entry| entry["path"] == declared }
+    if existing
+      existing["when"] = hint
+    else
+      parent_data["children"] << { "path" => declared, "when" => hint }
+    end
+    validate_scope_header!(parent_data, parent_map)
+    changes = [[parent_map, render_frontmatter(parent_data, parent_body)]]
+    result = {
+      "operation" => options[:dry_run] ? "dry_run_register_child" : "register_child",
+      "scope" => parent_map,
+      "child" => child_map,
+      "routing_hint" => hint,
+      "changes" => changes.map(&:first)
     }
     return result if options[:dry_run]
 
@@ -607,7 +615,9 @@ module AgenticScope
     map_path = scope_map_path(scope_path)
     data, = read_frontmatter(map_path)
     validate_scope_header!(data, map_path)
-    registered = data.dig("scope", "children").map { |path| resolve_declared(map_path, path) }
+    registered = child_entries(data).to_h do |entry|
+      [resolve_declared(map_path, entry.fetch("path")), entry.fetch("when")]
+    end
     output = []
 
     under_paths.each do |under|
@@ -622,7 +632,8 @@ module AgenticScope
           "name" => child_data["name"],
           "description" => child_data["description"],
           "resolved_path" => child_map,
-          "registered" => registered.include?(child_map)
+          "registered" => registered.key?(child_map),
+          "routing_hint" => registered[child_map]
         }
       end
     end
@@ -638,7 +649,7 @@ module AgenticScope
       data, = read_frontmatter(map_path)
       validate_scope_header!(data, map_path)
       local_names = { "context" => {}, "skill" => {} }
-      { "context" => data.dig("resources", "context"), "skill" => data.dig("resources", "skills") }.each do |kind, paths|
+      { "context" => resource_paths(data, "context"), "skill" => resource_paths(data, "skills") }.each do |kind, paths|
         paths.each do |declared|
           resolved = resolve_declared(map_path, declared)
           resource_data, = read_frontmatter(resolved)
@@ -651,45 +662,26 @@ module AgenticScope
         end
       end
 
-      parent = data.dig("scope", "parent")
-      if parent
-        parent_map = resolve_declared(map_path, parent)
-        if File.file?(parent_map) && File.readable?(parent_map)
-          parent_data, = read_frontmatter(parent_map)
-          validate_scope_header!(parent_data, parent_map)
-          expected_child = relative_path(map_path, File.dirname(parent_map))
-          errors << "Parent does not register child '#{expected_child}': #{parent_map}" unless parent_data.dig("scope", "children").include?(expected_child)
+      child_names = {}
+      child_hints = {}
+      child_entries(data).each do |entry|
+        declared = entry.fetch("path")
+        normalized_hint = entry.fetch("when").downcase.gsub(/\s+/, " ").strip
+        if child_hints[normalized_hint]
+          warnings << "Direct children share the same routing hint '#{entry.fetch('when')}': #{child_hints[normalized_hint]} and #{declared}; ambiguous requests require clarification"
         else
-          warnings << "Parent boundary is missing or inaccessible: #{parent_map}"
+          child_hints[normalized_hint] = declared
         end
-      end
-
-      data.dig("scope", "children").each do |declared|
         child_map = resolve_declared(map_path, declared)
         begin
+          errors << "Child path must point to AGENTS.md: #{declared}" unless File.basename(child_map) == "AGENTS.md"
           child_data, = read_frontmatter(child_map)
           validate_scope_header!(child_data, child_map)
-          expected_parent = relative_path(map_path, File.dirname(child_map))
-          errors << "Child does not point back with '#{expected_parent}': #{child_map}" unless child_data.dig("scope", "parent") == expected_parent
-        rescue ToolError => e
-          errors << e.message
-        end
-      end
-
-      chain, boundaries = inspect_chain(map_path)
-      warnings.concat(boundaries.map { |item| "Parent boundary is missing or inaccessible: #{item['resolved_path']}" })
-      skill_names = {}
-      chain.each do |record|
-        chain_data, = read_frontmatter(record["resolved_path"])
-        chain_data.dig("resources", "skills").each do |declared|
-          skill_path = resolve_declared(record["resolved_path"], declared)
-          skill_data, = read_frontmatter(skill_path)
-          validate_resource_header!(skill_data, skill_path)
-          name = skill_data["name"]
-          if skill_names[name]
-            errors << "Duplicate effective skill name '#{name}': #{skill_names[name]} and #{skill_path}"
+          child_name = child_data["name"]
+          if child_names[child_name]
+            errors << "Duplicate direct-child name '#{child_name}': #{child_names[child_name]} and #{child_map}"
           else
-            skill_names[name] = skill_path
+            child_names[child_name] = child_map
           end
         rescue ToolError => e
           errors << e.message
@@ -709,18 +701,22 @@ module AgenticScope
 
   def validate_scope_tree(scope_path)
     root_map = scope_map_path(scope_path)
-    queue = [root_map]
-    visited = {}
     scope_results = []
+    recorded_results = {}
     errors = []
     warnings = []
 
-    until queue.empty?
-      map_path = queue.shift
-      next if visited[map_path]
-      visited[map_path] = true
+    walk = lambda do |map_path, route_stack, effective_skills|
+      if route_stack.include?(map_path)
+        errors << "Child-registration cycle detected: #{(route_stack + [map_path]).join(' -> ')}"
+        next
+      end
+
       result = validate_scope(map_path)
-      scope_results << result
+      unless recorded_results[map_path]
+        scope_results << result
+        recorded_results[map_path] = true
+      end
       errors.concat(result["errors"].map { |message| "#{map_path}: #{message}" })
       warnings.concat(result["warnings"].map { |message| "#{map_path}: #{message}" })
       next unless File.file?(map_path) && File.readable?(map_path)
@@ -728,30 +724,34 @@ module AgenticScope
       begin
         data, = read_frontmatter(map_path)
         validate_scope_header!(data, map_path)
-        children = data.dig("scope", "children").map do |declared|
-          child_map = resolve_declared(map_path, declared)
+        route_skills = effective_skills.dup
+        resource_paths(data, "skills").each do |declared|
+          skill_path = resolve_declared(map_path, declared)
+          skill_data, = read_frontmatter(skill_path)
+          validate_resource_header!(skill_data, skill_path)
+          name = skill_data["name"]
+          if route_skills[name]
+            errors << "#{map_path}: Duplicate effective skill name '#{name}': #{route_skills[name]} and #{skill_path}"
+          else
+            route_skills[name] = skill_path
+          end
+        rescue ToolError => e
+          errors << "#{map_path}: #{e.message}"
+        end
+
+        children = child_entries(data).map do |entry|
+          child_map = resolve_declared(map_path, entry.fetch("path"))
           child_data, = read_frontmatter(child_map)
           validate_scope_header!(child_data, child_map)
-          queue << child_map
-          { "map" => child_map, "dir" => File.dirname(child_map), "data" => child_data }
+          { "map" => child_map, "dir" => File.dirname(child_map), "data" => child_data, "when" => entry.fetch("when") }
         rescue ToolError => e
           errors << "#{map_path}: #{e.message}"
           nil
         end.compact
 
-        child_names = {}
-        children.each do |child|
-          name = child.dig("data", "name")
-          if child_names[name]
-            errors << "#{map_path}: Duplicate direct-child name '#{name}': #{child_names[name]} and #{child['map']}"
-          else
-            child_names[name] = child["map"]
-          end
-        end
-
         children.each do |child|
           %w[context skills].each do |kind|
-            child.dig("data", "resources", kind).each do |declared|
+            resource_paths(child["data"], kind).each do |declared|
               resolved = resolve_declared(child["map"], declared)
               sibling = children.find { |candidate| candidate != child && path_within?(resolved, candidate["dir"]) }
               next unless sibling
@@ -760,15 +760,19 @@ module AgenticScope
           end
         end
 
-        confidential = children.select { |child| child.dig("data", "scope", "confidential") == true }
+        confidential = children.select { |child| child.dig("data", "confidential") == true }
         confidential.group_by { |child| repository_root(child["dir"]) }.each do |repo, group|
           next unless group.length > 1
           warnings << "#{map_path}: Confidential sibling scopes share readable repository #{repo}: #{group.map { |child| child.dig('data', 'name') }.join(', ')}"
         end
+
+        children.each { |child| walk.call(child["map"], route_stack + [map_path], route_skills) }
       rescue ToolError => e
         errors << "#{map_path}: #{e.message}"
       end
     end
+
+    walk.call(root_map, [], {})
 
     {
       "scope" => root_map,
@@ -788,6 +792,7 @@ module AgenticScope
         puts "#{record['kind']}: #{record['name']} — #{record['description']}"
         puts "  path: #{record['resolved_path']}"
         puts "  declared by: #{record['declared_by']}"
+        puts "  when: #{record['routing_hint']}" if record["routing_hint"]
       end
       result["boundaries"].each { |item| puts "boundary: #{item['resolved_path']}" }
     elsif result.key?("candidates")
@@ -836,13 +841,13 @@ module AgenticScope
       options = { start: Dir.pwd, format: "json" }
       parser = OptionParser.new do |opts|
         opts.on("--start PATH") { |value| options[:start] = value }
+        opts.on("--entry PATH") { |value| options[:entry] = value }
         opts.on("--local PATH") { |value| options[:local] = value }
         format_option(opts, options)
       end
       parser.parse!(argv)
-      result = resolve_active_scope(options[:start], options[:local])
+      result = resolve_active_scope(options[:start], options[:entry], options[:local])
       emit(result, options[:format])
-      exit 2 if result["ambiguous"]
     when "inspect"
       options = { includes: ["map"], format: "json" }
       parser = OptionParser.new do |opts|
@@ -852,7 +857,7 @@ module AgenticScope
       end
       parser.parse!(argv)
       raise ToolError, "--scope is required" unless options[:scope]
-      unknown = options[:includes] - %w[map resources parent children chain]
+      unknown = options[:includes] - %w[map resources children]
       raise ToolError, "Unknown --include value: #{unknown.join(', ')}" unless unknown.empty?
       emit(inspect_scope(options[:scope], options[:includes]), options[:format])
     when "setup"
@@ -863,7 +868,6 @@ module AgenticScope
         opts.on("--description TEXT") { |value| options[:description] = value }
         opts.on("--type TYPE") { |value| options[:type] = value }
         opts.on("--confidential") { options[:confidential] = true }
-        opts.on("--parent PATH") { |value| options[:parent] = value }
         opts.on("--context PATH") { |value| options[:context] << value }
         opts.on("--skill PATH") { |value| options[:skills] << value }
         opts.on("--with-local") { options[:with_local] = true }
@@ -873,6 +877,20 @@ module AgenticScope
       parser.parse!(argv)
       raise ToolError, "--scope-dir is required" unless options[:scope_dir]
       emit(setup_scope(options), options[:format])
+    when "register-child"
+      options = { dry_run: false, format: "json" }
+      parser = OptionParser.new do |opts|
+        opts.on("--scope PATH") { |value| options[:scope] = value }
+        opts.on("--child PATH") { |value| options[:child] = value }
+        opts.on("--when TEXT") { |value| options[:when] = value }
+        opts.on("--dry-run") { options[:dry_run] = true }
+        format_option(opts, options)
+      end
+      parser.parse!(argv)
+      %i[scope child when].each do |key|
+        raise ToolError, "--#{key} is required" if options[key].to_s.strip.empty?
+      end
+      emit(register_child(options), options[:format])
     when "candidates"
       options = { under: [], format: "json" }
       parser = OptionParser.new do |opts|

@@ -1,0 +1,61 @@
+name: scope-child-routing
+model: gpt-5.6-luna
+variants:
+  cobalt: path-only
+  umber: path-with-routing-hints
+children:
+  - { path: billing, description: "Scope for invoices, refunds, account charges, and billing disputes.", when: "Use for invoices, refunds, account charges, or billing disputes." }
+  - { path: calendar, description: "Scope for meetings, availability, calendars, and scheduling.", when: "Use for meetings, availability, calendars, or scheduling." }
+  - { path: catalog, description: "Scope for product taxonomy, attributes, and catalog metadata.", when: "Use for product taxonomy, attributes, or catalog metadata." }
+  - { path: compliance, description: "Scope for policy compliance, control reviews, and audits.", when: "Use for policy compliance, control reviews, or audits." }
+  - { path: content, description: "Scope for editorial documents, publishing, and content workflow.", when: "Use for editorial documents, publishing, or content workflow." }
+  - { path: customers, description: "Scope for customer accounts, profiles, and support history.", when: "Use for customer accounts, profiles, or support history." }
+  - { path: devices, description: "Scope for hardware enrollment, device inventory, and fleet management.", when: "Use for hardware enrollment, device inventory, or fleet management." }
+  - { path: events, description: "Scope for webinars, attendance, registration, and managed events.", when: "Use for webinars, attendance, registration, or managed events." }
+  - { path: identity, description: "Scope for login, roles, authentication, and access provisioning.", when: "Use for login, roles, authentication, or access provisioning." }
+  - { path: inventory, description: "Scope for stock levels, warehouses, and inventory records.", when: "Use for stock levels, warehouses, or inventory records." }
+  - { path: q7, description: "Scope for shipping, deliveries, carriers, and parcel tracking.", when: "Use for shipping, deliveries, carriers, or parcel tracking." }
+  - { path: m2, description: "Scope for dashboards, analytics, metrics, and business reports.", when: "Use for dashboards, analytics, metrics, or business reports." }
+  - { path: r4, description: "Scope for email, push, and in-application notification delivery.", when: "Use for email, push, or in-application notification delivery." }
+  - { path: z9, description: "Scope for checkout, payment methods, and payment transactions.", when: "Use for checkout, payment methods, or payment transactions." }
+  - { path: k3, description: "Scope for projects, milestones, tasks, and delivery tracking.", when: "Use for projects, milestones, tasks, or delivery tracking." }
+  - { path: t8, description: "Scope for search queries, relevance, and information discovery.", when: "Use for search queries, relevance, or information discovery." }
+  - { path: p5, description: "Scope for translations, locale resources, and localization support.", when: "Use for translations, locale resources, or localization support." }
+  - { path: v6, description: "Scope for experiments, variants, feature flags, and staged rollout.", when: "Use for experiments, variants, feature flags, or staged rollout." }
+  - { path: n1, description: "Scope for security incidents, threats, and incident response.", when: "Use for security incidents, threats, or incident response." }
+  - { path: x0, description: "Scope for images, video, downloads, and managed media assets.", when: "Use for images, video, downloads, or managed media assets." }
+nested:
+  content:
+    - { path: review, description: "Scope for editorial approval and pre-publication review.", when: "Use for editorial approval or pre-publication review." }
+    - { path: locales, description: "Scope for localized publishing and translated editorial content.", when: "Use for localized publishing or translated editorial content." }
+  q7:
+    - { path: returns, description: "Scope for shipment returns and reverse logistics.", when: "Use for shipment returns or reverse logistics." }
+prompts:
+  - { id: R1, category: root-only, request: "What can this portfolio help me with?", expected: [] }
+  - { id: R2, category: root-only, request: "Where should I start in this workspace?", expected: [] }
+  - { id: R3, category: root-only, request: "Explain the shared working conventions at this level.", expected: [] }
+  - { id: R4, category: root-only, request: "Summarize the purpose of this portfolio.", expected: [] }
+  - { id: E1, category: explicit-name, request: "Take me to billing.", expected: [billing] }
+  - { id: E2, category: explicit-name, request: "Open q7.", expected: [q7] }
+  - { id: E3, category: explicit-name, request: "I need the z9 area.", expected: [z9] }
+  - { id: E4, category: explicit-name, request: "Go to content.", expected: [content] }
+  - { id: S1, category: semantic, request: "Where should I update the attendee list for an online seminar?", expected: [events] }
+  - { id: S2, category: semantic, request: "I need to enroll a fleet of employee laptops.", expected: [devices] }
+  - { id: S3, category: semantic, request: "Where are application-interface translation keys and locale resources maintained?", expected: [p5] }
+  - { id: S4, category: semantic, request: "Which area owns controlled rollout toggles for an experiment?", expected: [v6] }
+  - { id: A1, category: ambiguous, request: "I have a problem with a customer charge.", expected: [billing, z9], clarification_allowed: true }
+  - { id: A2, category: ambiguous, request: "There is a policy-related security incident.", expected: [compliance, n1], clarification_allowed: true }
+  - { id: A3, category: ambiguous, request: "I need a report about warehouse stock.", expected: [inventory, m2], clarification_allowed: true }
+  - { id: A4, category: ambiguous, request: "I need help sending a message to a customer.", expected: [customers, r4], clarification_allowed: true }
+  - { id: N1, category: no-match, request: "Where do I manage payroll?", expected: [] }
+  - { id: N2, category: no-match, request: "Open the legal contracts area.", expected: [] }
+  - { id: N3, category: no-match, request: "How do I configure source-code repositories?", expected: [] }
+  - { id: N4, category: no-match, request: "Where are physical office reservations managed?", expected: [] }
+  - { id: M1, category: multi-child, request: "Compare billing disputes, checkout payments, and refunds.", expected: [billing, z9] }
+  - { id: M2, category: multi-child, request: "Review the editorial workflow and translation support together.", expected: [content, p5] }
+  - { id: M3, category: multi-child, request: "Check customer support history, outbound alerts, and parcel delivery.", expected: [customers, r4, q7] }
+  - { id: M4, category: multi-child, request: "Show project milestones alongside experiment rollout status.", expected: [k3, v6] }
+  - { id: D1, category: nested, request: "Where do editors approve an article before it is published?", expected: [content/review] }
+  - { id: D2, category: nested, request: "How do translated articles enter the publishing flow?", expected: [content/locales] }
+  - { id: D3, category: nested, request: "Where should I process a returned shipment?", expected: [q7/returns] }
+  - { id: D4, category: nested, request: "Open the content review area.", expected: [content/review] }

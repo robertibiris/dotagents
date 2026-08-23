@@ -7,7 +7,7 @@ Add a task file under an existing tracked plan and insert a reference in the par
 
 ## Resolve the plan root
 
-Before reading or writing tasks, use the `setup-agentic-scope` resolver from the operation's working path. Use `selected_local.plans_path`; do not assume the repository root owns the plan. If multiple ancestor local directories are applicable and the active scope has none, stop and request the intended scope rather than guessing. Preserve the flat-repository path `.agents/local/plans/` when it is the single resolved root.
+Before reading or writing tasks, use the `setup-agentic-scope` resolver from the operation's working path and declare `--entry` when the session intentionally began at a broader scope. Use `selected_local.plans_path`; do not assume the repository root or broader entry owns the plan. If the active scope has no local directory, require an explicit `--local` owner on the composed route rather than falling back. Preserve `.agents/local/plans/` for a standalone flat scope.
 
 ## Inputs
 

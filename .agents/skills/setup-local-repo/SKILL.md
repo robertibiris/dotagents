@@ -17,11 +17,11 @@ The scripts in `scripts/` are the deterministic sources of truth:
 - `migrate_legacy_plans_repo.sh` — re-root an existing `.agents/plans/.git/` repository at `.agents/local/.git/` while preserving history.
 
 Both scripts use `templates/local-repo.gitignore.template` as the authoritative nested `.gitignore` content.
-Set `SETUP_LOCAL_REPO_SKILL_DIR` to the absolute directory containing this discovered `SKILL.md`. Resolve both scripts and their template beneath it; when the skill is inherited from an ancestor, do not resolve them from the active leaf.
+Set `SETUP_LOCAL_REPO_SKILL_DIR` to the absolute directory containing this discovered `SKILL.md`. Resolve both scripts and their template beneath it; do not resolve them from the operation's working directory.
 
 ## Resolve the owning scope
 
-Use the `setup-agentic-scope` resolver from the operation's working path before initialization or migration. The target is the context scope that owns the selected `.agents/local/`, not necessarily a Git root. If several ancestor local directories are applicable and the active scope has none, require an explicit scope choice. Pass that scope directory to the scripts with `--scope-dir`.
+Use the `setup-agentic-scope` resolver from the operation's working path before initialization or migration, declaring `--entry` for intentional composition. The target is the context scope that owns `selected_local`, not necessarily a Git root. The active scope is the only implicit owner; use an explicit `--local` to choose another scope on the composed route. Pass that owning scope directory to the scripts with `--scope-dir`.
 
 ## Fresh Setup
 

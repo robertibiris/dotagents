@@ -6,8 +6,8 @@ Describe only instructions owned by {{SCOPE_NAME}}. Keep detailed knowledge in r
 
 ## Protected Requirements
 
-List security, privacy, compliance, confidentiality, or access requirements that descendants must not silently weaken. Remove this section when none apply.
+List security, privacy, compliance, confidentiality, or access requirements owned by this scope. Remove this section when none apply.
 
 ## Navigation
 
-Use the scope-map frontmatter for the direct parent, direct children, and local resources. Inspect registered metadata before reading complete resource bodies.
+Use frontmatter as this scope's local resource index and optional direct-child routing map. Child hints narrow the route; verify the selected child's header before entering it. Inspect registered metadata before reading complete resource bodies.

@@ -1,0 +1,54 @@
+{
+  "model": "gpt-5.6-luna",
+  "paired_prompts": 19,
+  "variants": {
+    "path-only": {
+      "trials": 19,
+      "routing_correct": 12,
+      "compliant": 12,
+      "input_tokens": 594195,
+      "cached_input_tokens": 381440,
+      "uncached_input_tokens": 212755,
+      "output_tokens": 7581,
+      "reasoning_output_tokens": 3336,
+      "total_tokens": 601776,
+      "tokens_per_compliant_route": 50148.0,
+      "commands": 24,
+      "wall_time_seconds": 283.802,
+      "body_sentinel_exposures": 0
+    },
+    "path-with-routing-hints": {
+      "trials": 19,
+      "routing_correct": 16,
+      "compliant": 16,
+      "input_tokens": 530902,
+      "cached_input_tokens": 347392,
+      "uncached_input_tokens": 183510,
+      "output_tokens": 5215,
+      "reasoning_output_tokens": 2013,
+      "total_tokens": 536117,
+      "tokens_per_compliant_route": 33507.3,
+      "commands": 19,
+      "wall_time_seconds": 214.95,
+      "body_sentinel_exposures": 0
+    }
+  },
+  "paired_total_token_difference_hint_minus_path": {
+    "sum": -65659,
+    "median": 344,
+    "hint_cheaper_pairs": 6,
+    "path_cheaper_pairs": 13
+  },
+  "actual_execution_footprint": {
+    "scored_total_tokens": 1137893,
+    "successful_smoke_total_tokens": 495449,
+    "combined_total_tokens": 1633342,
+    "combined_input_tokens": 1615641,
+    "combined_cached_input_tokens": 1111040,
+    "combined_uncached_input_tokens": 504601,
+    "combined_output_tokens": 17701,
+    "combined_reasoning_output_tokens": 7772,
+    "cache_write_input_tokens": 0
+  },
+  "recommendation": "Require a concise parent-owned when hint for every registered direct child, then verify the selected child's authoritative header."
+}

@@ -52,7 +52,7 @@ project-root/
 ├── CLAUDE.md                    # Claude integration (references AGENTS.md)
 ├── .agents/
 │   ├── context/                 # Setup and reference docs
-│   │   ├── agentic-infrastructure.md      # Normative hierarchy
+│   │   ├── agentic-infrastructure.md      # Normative scope composition
 │   │   ├── progressive-disclosure.md      # Metadata-first discovery
 │   │   ├── setup-agentic-infrastructure.md # Operational setup guide
 │   │   └── platform-adapters.md            # Platform mappings
@@ -125,7 +125,7 @@ For detailed setup, platform-specific options, and best practices, see [`.agents
 
 ### Resuming Work
 
-Run the `whats-next` skill to see the next actionable steps in the active scope's resolved local directory. If several ancestor local directories are applicable, the workflow asks you to choose rather than combining or guessing.
+Run the `whats-next` skill to see the next actionable steps in the active scope's local directory. The active scope is the only implicit owner; choose another owner explicitly when the session was intentionally composed from a broader entry.
 
 ### Creating Work
 
@@ -149,7 +149,7 @@ Run the `whats-next` skill to see the next actionable steps in the active scope'
 | `create-learning` | Capture non-obvious insights as structured learnings |
 | `setup-local-repo` | Initialize or migrate the nested repository for developer-owned local content |
 | `setup-agentic-context` | Bootstrap agentic infrastructure in a new repo |
-| `setup-agentic-scope` | Create, inspect, validate, and adapt hierarchical context scopes |
+| `setup-agentic-scope` | Create independent scopes and compose, inspect, resolve, validate, and adapt direct-child routes |
 | `review-agentic-infra` | Audit agent infrastructure |
 
 Skill definitions live in [`.agents/skills/`](.agents/skills/) as the single source of truth. Codex, Cursor, and supported GitHub Copilot surfaces read that directory natively. Claude uses a generated scope-local `.claude/skills/` symlink.
@@ -160,7 +160,7 @@ Skill definitions live in [`.agents/skills/`](.agents/skills/) as the single sou
 
 | Platform | File(s) | Notes |
 |----------|---------|-------|
-| **Codex** | `AGENTS.md`, `.agents/skills/` | Native hierarchical instruction and skill discovery; no generated adapter |
+| **Codex** | `AGENTS.md`, `.agents/skills/` | Uses canonical scope maps and skills directly; explicit child routes define portable composition |
 | **Cursor** | `.cursor/rules/agentic-scope.mdc`, `.agents/skills/` | Generated scoped rule points to `AGENTS.md`; nested canonical skills are discovered natively |
 | **GitHub Copilot** | `.github/copilot-instructions.md`, `.github/instructions/` | Generated repository or path-specific instructions point to the applicable scope map |
 | **Claude** | `CLAUDE.md`, `.claude/skills/` (symlink) | Generated `CLAUDE.md` imports `AGENTS.md`; the symlink exposes canonical skills |
@@ -170,6 +170,7 @@ Skill definitions live in [`.agents/skills/`](.agents/skills/) as the single sou
 ## Best Practices
 
 - **Keep `AGENTS.md` concise** — Put detailed information in `.agents/` files.
+- **Keep scopes independent** — Children never point to or depend on a broader entry. Parents register direct children with concise `when` hints.
 - **Run `whats-next` when resuming work** — It surfaces the next actionable steps so you can pick up where you left off.
 - **Use `.agents/local/` for developer-owned content** — Plans, personal context, experimental skills, scratch work, and private workflow state belong here rather than in shared infrastructure.
 - **Use the optional local repository** — Run `setup-local-repo` when you want independent history for the entire developer space.
@@ -181,7 +182,7 @@ Skill definitions live in [`.agents/skills/`](.agents/skills/) as the single sou
 ## Further Reading
 
 - [`.agents/context/setup-agentic-infrastructure.md`](.agents/context/setup-agentic-infrastructure.md) — Operational setup and migration guide
-- [`.agents/context/agentic-infrastructure.md`](.agents/context/agentic-infrastructure.md) — Normative hierarchical architecture
+- [`.agents/context/agentic-infrastructure.md`](.agents/context/agentic-infrastructure.md) — Normative independent-scope and one-way composition architecture
 - [`.agents/context/platform-adapters.md`](.agents/context/platform-adapters.md) — Platform capability mappings and adapter contract
 - [AGENTS.md](AGENTS.md) — Master reference for plans, tasks, skills, and workflow
 - [AGENTS.md pattern](https://agents.md/) — Official documentation for the AGENTS.md pattern

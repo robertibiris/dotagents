@@ -9,7 +9,7 @@ Interactively create or update learnings documents so non-obvious, hard-won insi
 
 ## Resolve the plan root
 
-Use the `setup-agentic-scope` resolver before selecting a learning file, and interpret every path below relative to `selected_local.plans_path`. If several ancestor local directories are applicable, obtain an explicit scope choice and rerun with `--local`; do not silently write a learning into the nearest repository. A single flat-repository local directory remains fully compatible.
+Use the `setup-agentic-scope` resolver before selecting a learning file, declaring the broader `--entry` when composition is intentional, and interpret every path below relative to `selected_local.plans_path`. The active scope is the only implicit owner; use `--local` to deliberately choose another owner on the composed route. Do not write into a broader entry or Git root by proximity.
 
 ## Interactive flow
 

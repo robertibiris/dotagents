@@ -1,5 +1,7 @@
 # Hierarchical Agentic Infrastructure Experiments
 
+> **Archived experiment:** These fixtures document the bidirectional design evaluated before one-way scope composition was adopted. Their `scope.parent` schema is intentionally unsupported by the current tool. To reproduce the historical validator with its matching implementation, use commit `c14b97c`. For the current decision and reproducible evidence, see [`../scope-child-routing/RESULTS.md`](../scope-child-routing/RESULTS.md).
+
 These fixtures compare three ways of making company, client, and project context available to Codex, Claude Code, Cursor, and GitHub Copilot without exposing sibling scopes by default.
 
 They are deliberately isolated from this template's live `.agents/` infrastructure. The company names, clients, projects, context markers, and skills are fictional.
@@ -53,7 +55,7 @@ This alternative tests how much hierarchy the platforms can supply without an ex
 - Native discovery accelerates supported platforms but is not required by the structural tests.
 - Thin generated adapters contain routing mechanics only.
 
-This is the recommended production model. The validator exercises its full chain, direct children, sibling isolation, missing ancestor, nested repository, metadata sentinel, and adapter scenarios in disposable copies.
+This was the recommendation produced by the archived experiment. The later one-way composition decision supersedes it. The historical validator exercised its full chain, direct children, sibling isolation, missing ancestor, nested repository, metadata sentinel, and adapter scenarios in disposable copies.
 
 ## Success Criteria
 

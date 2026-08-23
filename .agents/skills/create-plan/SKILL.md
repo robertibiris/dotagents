@@ -9,7 +9,7 @@ Create a new tracked plan directory and initialize `plan.md` with its initial ta
 
 ## Resolve the plan root
 
-Before reading or writing plans, run the `resolve` command bundled with `setup-agentic-scope`, using the operation's working path as `--start`. Use `selected_local.plans_path` as the plan root. If resolution reports multiple applicable ancestor locals, stop and identify the intended scope with the user, then rerun with `--local`; never choose by Git root or proximity alone. If no local directory exists, create one only when the user wants tracked local state.
+Before reading or writing plans, run the `resolve` command bundled with `setup-agentic-scope`, using the operation's working path as `--start` and the session entry as `--entry` when work was intentionally composed from a broader scope. Use `selected_local.plans_path` as the plan root. The active scope is the only implicit owner; select another local on the composed route only through an explicit `--local`. If no local directory is selected, create one only when the user wants tracked local state.
 
 ## Inputs
 
