@@ -74,6 +74,7 @@ In this repository a **tracked plan** refers to a file-based plan under `.agents
 - Do not enumerate or load sibling scopes unless the task explicitly targets them.
 - Stop cleanly when a declared scope is outside granted filesystem or workspace access.
 - Apply the instructions of each scope on the explicitly composed entry-to-active route; do not infer broader instructions when a child is opened independently.
+- Resolve same-named skills from root to leaf: the nearest declaration to the active scope is effective, while duplicate names declared within one scope remain invalid.
 - Plans and tasks must not be merged together; every concern has its own file. Metadata, timestamps, and note ordering must stay consistent across the hierarchy.
 
 ## Skills Index

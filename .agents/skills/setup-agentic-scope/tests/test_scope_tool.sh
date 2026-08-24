@@ -133,12 +133,27 @@ ruby "${TOOL}" validate --scope "${nested}" --descendants >/dev/null
 pass "composition across nested repository boundaries"
 
 duplicate_skill="${fixture}/.agents/skills/duplicate/SKILL.md"
-write_file "${duplicate_skill}" $'---\nname: atlas-review\ndescription: Deliberate route duplicate.\n---\n'
+write_file "${duplicate_skill}" $'---\nname: atlas-review\ndescription: Workspace-local review workflow.\n---\n'
 ruby "${TOOL}" setup --scope-dir "${fixture}" --skill "${duplicate_skill}" >/dev/null
-if ruby "${TOOL}" validate --scope "${root}" --descendants >/dev/null 2>&1; then fail "duplicate route skill was accepted"; fi
-duplicate_output="$(ruby "${TOOL}" validate --scope "${root}" --descendants 2>/dev/null || true)"
-grep -Fq "Duplicate effective skill name 'atlas-review'" <<<"${duplicate_output}" || fail "duplicate diagnostic was vague"
-pass "duplicate skill detection along composed routes"
+leaf_skill="$(dirname "${leaf}")/.agents/skills/review/SKILL.md"
+write_file "${leaf_skill}" $'---\nname: atlas-review\ndescription: Orbit-local review workflow.\n---\n'
+ruby "${TOOL}" setup --scope-dir "$(dirname "${leaf}")" --skill "${leaf_skill}" >/dev/null
+shadow_output="$(ruby "${TOOL}" validate --scope "${root}" --descendants --format text)"
+grep -Fq "Skill 'atlas-review' shadows ancestor declaration" <<<"${shadow_output}" || fail "route-local shadowing warning was absent"
+grep -Fq '/workspace/.agents/skills/duplicate/SKILL.md' <<<"${shadow_output}" || fail "root shadowed path was absent"
+grep -Fq '/workspace/initiatives/atlas/.agents/skills/review/SKILL.md' <<<"${shadow_output}" || fail "child effective path was absent"
+grep -Fq '/workspace/initiatives/atlas/services/orbit/.agents/skills/review/SKILL.md' <<<"${shadow_output}" || fail "leaf effective path was absent"
+pass "nearest-scope skill shadowing along composed routes"
+
+same_scope_a="${fixture}/.agents/skills/same-scope-a/SKILL.md"
+same_scope_b="${fixture}/.agents/skills/same-scope-b/SKILL.md"
+write_file "${same_scope_a}" $'---\nname: same-scope-collision\ndescription: First local declaration.\n---\n'
+write_file "${same_scope_b}" $'---\nname: same-scope-collision\ndescription: Second local declaration.\n---\n'
+ruby "${TOOL}" setup --scope-dir "${fixture}" --skill "${same_scope_a}" --skill "${same_scope_b}" >/dev/null
+if ruby "${TOOL}" validate --scope "${root}" >/dev/null 2>&1; then fail "same-scope duplicate skill was accepted"; fi
+same_scope_output="$(ruby "${TOOL}" validate --scope "${root}" 2>/dev/null || true)"
+grep -Fq "Duplicate skill name 'same-scope-collision'" <<<"${same_scope_output}" || fail "same-scope duplicate diagnostic was vague"
+pass "same-scope duplicate skill rejection"
 
 cycle_root="${TEST_ROOT}/cycle/root"
 cycle_child="${cycle_root}/child"
@@ -200,4 +215,4 @@ fi
 grep -Fq 'User-owned Claude instructions' "${collision}/CLAUDE.md" || fail "unmanaged adapter content changed"
 pass "unmanaged adapter collision protection"
 
-echo "Completed 15 one-way scope-management and adapter regression checks."
+echo "Completed 16 one-way scope-management and adapter regression checks."

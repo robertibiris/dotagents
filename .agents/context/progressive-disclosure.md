@@ -186,9 +186,11 @@ Report an error for:
 - A registered file that does not exist.
 - A declaring-path resolution error.
 - A directed child-registration cycle.
-- Duplicate effective skill names on one composed route.
+- Duplicate skill names declared within one scope.
 
 The same child registered by different parents is valid. Similar child hints are not a schema error, but runtime routing must surface genuine ambiguity.
+
+A descendant may register a skill with the same `name` as an ancestor because each scope must remain independently usable. Composition resolves that name from root to leaf, replacing the effective declaration at each nearer scope. Validation reports every replacement as a warning with the ancestor and descendant paths. Shadowing changes which workflow is selected; it never permits descendant instructions to weaken effective ancestor security, privacy, compliance, confidentiality, or access requirements.
 
 ## Catalogs
 
@@ -209,7 +211,7 @@ The implementation must test:
 9. A nested target resolves from an explicit entry scope.
 10. Missing empty collections are accepted.
 11. Malformed or unterminated frontmatter fails without body loading.
-12. Duplicate effective skill names fail along a composed route.
+12. A descendant same-named skill shadows its ancestor with a diagnostic, while duplicate names inside one scope fail.
 
 ## Migration
 

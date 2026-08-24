@@ -730,11 +730,10 @@ module AgenticScope
           skill_data, = read_frontmatter(skill_path)
           validate_resource_header!(skill_data, skill_path)
           name = skill_data["name"]
-          if route_skills[name]
-            errors << "#{map_path}: Duplicate effective skill name '#{name}': #{route_skills[name]} and #{skill_path}"
-          else
-            route_skills[name] = skill_path
+          if effective_skills[name]
+            warnings << "#{map_path}: Skill '#{name}' shadows ancestor declaration #{effective_skills[name]} with #{skill_path}"
           end
+          route_skills[name] = skill_path
         rescue ToolError => e
           errors << "#{map_path}: #{e.message}"
         end

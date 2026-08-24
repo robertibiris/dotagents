@@ -94,7 +94,7 @@ ruby "${SETUP_AGENTIC_SCOPE_SKILL_DIR}/scripts/scope_tool.rb" validate \
   --format text
 ```
 
-Single-scope validation checks the lean schema, mandatory child hints, identical-hint ambiguity warnings, registered resource metadata, and duplicate local resource names. `--descendants` follows registered children and also checks route cycles, duplicate effective skill names, cross-sibling resource references, and confidential-sibling co-location. It does not require reciprocity because children have no parent declaration.
+Single-scope validation checks the lean schema, mandatory child hints, identical-hint ambiguity warnings, registered resource metadata, and duplicate local resource names. `--descendants` follows registered children and also checks route cycles, deterministic nearest-scope skill shadowing, cross-sibling resource references, and confidential-sibling co-location. A descendant may own a same-named skill and replaces the ancestor declaration for its subtree; validation reports both paths as a warning. It does not require reciprocity because children have no parent declaration.
 
 ## Generate or check platform adapters
 
@@ -112,7 +112,7 @@ This generates only thin platform mechanics: a Claude import and local skill lin
 - Route downward only through explicit child entries and verify the selected child header.
 - Ask for clarification when several hints plausibly match; do not enumerate every child body.
 - Never enumerate siblings or descendants outside an explicit candidate container or registered route.
-- Keep skill names unique along each composed route.
+- Keep skill names unique within each scope. When a descendant intentionally reuses an ancestor skill name, the nearest declaration to the active scope is effective and validation reports the shadowed path.
 - Treat `.agents/local/` as optional and private by convention, not as a secrets vault.
 - Treat generated platform files as disposable adapters; durable knowledge belongs in canonical maps and resources.
 

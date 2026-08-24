@@ -73,7 +73,7 @@ description: Architecture boundaries and component relationships for Example Pro
 ---
 ```
 
-Add context paths to `resources.context` and skill entry paths to `resources.skills`. Registration—not directory membership—makes a resource discoverable. Keep skill-owned templates and deterministic scripts inside the skill directory. Skill names must be unique along any composed route.
+Add context paths to `resources.context` and skill entry paths to `resources.skills`. Registration—not directory membership—makes a resource discoverable. Keep skill-owned templates and deterministic scripts inside the skill directory. Skill names must be unique within one scope. An independently usable descendant may reuse an ancestor skill name; along that descendant's route, the nearest declaration is effective and validation emits a shadowing warning with both paths.
 
 ## Compose a Parent Entry from Children
 
@@ -169,7 +169,7 @@ For a project upgrading from the former `.agents/plans/` nested repository, reso
 - [ ] Registered paths resolve from their declaring scope.
 - [ ] Routing follows only explicit direct-child entries and verifies selected child headers.
 - [ ] Ambiguous hints trigger clarification instead of broad disclosure.
-- [ ] Skill names are unique along every composed route.
+- [ ] Skill names are unique within each scope; intentional descendant shadowing is deterministic and its validator warnings have been reviewed.
 - [ ] Platform adapters reference canonical sources without duplicated scope knowledge.
 - [ ] Optional local state defaults only to its active owning scope.
 - [ ] Nested repositories and multiply registered children remain independently usable.

@@ -60,7 +60,7 @@ For each context file, evaluate against:
 4. **Best Practices** — single source of truth (no duplication), platform files reference core context, proper separation of concerns, modular design.
 5. **Maintainability** — easy to update, clear relationships, portable where applicable, logical structure.
 6. **Ownership boundary** — shared guidance and assets remain outer-tracked; developer-owned state remains local and ignored.
-7. **Composition integrity** — mandatory routing hints, child independence, route cycles, duplicate effective skill names, cross-sibling references, and adapter integrity are reported distinctly.
+7. **Composition integrity** — mandatory routing hints, child independence, route cycles, same-scope skill collisions, descendant skill-shadowing warnings, cross-sibling references, and adapter integrity are reported distinctly.
 
 ### Step 3: Review skills
 

@@ -183,7 +183,7 @@ A conforming validator must check, without reading context or skill bodies:
 - Required `{path, when}` child entries.
 - Child paths, duplicate child identifiers, and directed cycles.
 - Declaring-map-relative path resolution.
-- Duplicate effective skill names along each composed route.
+- Duplicate skill names within one scope, plus nearest-scope shadowing diagnostics when descendants reuse ancestor names.
 - Cross-sibling resource references.
 - Optional confidential-sibling co-location warnings.
 - Platform adapter integrity.
